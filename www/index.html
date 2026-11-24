@@ -289,6 +289,15 @@ const PAL_E = [
 ];
 const ENEMY_PTS = [500, 750, 1500];
 const ENEMY_GEMS = [1, 2, 3];
+const INSECTS = {
+  wasp: { draw: drawWasp, air: 1, flap: 1, grav: 1, hp: 0 },
+  firefly: { draw: drawFirefly, air: 1, flap: 1, grav: 0.9, hp: 0, flicker: true },
+  mosquito: { draw: drawMosquito, air: 1.18, flap: 0.9, grav: 0.85, hp: 0 },
+  beetle: { draw: drawFireBeetle, air: 0.88, flap: 1.05, grav: 1.05, hp: 1 },
+  locust: { draw: drawLocust, air: 1.05, flap: 1.4, grav: 1.1, hp: 0, leap: true },
+  ladybug: { draw: drawLadybug, air: 0.95, flap: 0.85, grav: 0.7, hp: 0 },
+};
+const insectOf = r => INSECTS[r.sp] || INSECTS.wasp;
 const WALKER_PAL = {
   sea: { s1: '#7ff0c8', s2: '#0e5a5a', eye: '#d6ff5a' },
   cave: { s1: '#bfe6ff', s2: '#2a4a8a', eye: '#ff7ad8' },
@@ -309,7 +318,7 @@ const PW_TYPES = Object.keys(PW);
 
 // ---------- realms ----------
 const REALMS = [
-  { name: 'Moonlit Sea', sub: 'REALM I', theme: 'sea', boss: 'queen', bossName: 'WASP QUEEN', bossTitle: 'Wasp Queen', intro: 'Joust from above, or blast them with FIRE', tip: 'Beware the serpent below', hint: 'Beat the Wasp Queen on the boss level to open the next realm.',
+  { name: 'Moonlit Sea', sub: 'REALM I', theme: 'sea', insect: 'wasp', foes: 'Wasp Riders', boss: 'queen', bossName: 'WASP QUEEN', bossTitle: 'Wasp Queen', intro: 'Joust from above, or blast them with FIRE', tip: 'Beware the serpent below', hint: 'Beat the Wasp Queen on the boss level to open the next realm.',
     extra: [
       [{ x: 0, y: 300, w: 110, shore: 1 }, { x: 530, y: 300, w: 110, shore: 1 }, { x: 200, y: 250, w: 120, spawn: 1 }, { x: 40, y: 196, w: 90, spawn: 1 }, { x: 470, y: 210, w: 110, spawn: 1 },
        { x: 300, y: 160, w: 100 }, { x: 0, y: 104, w: 80 }, { x: 540, y: 100, w: 100 }, { x: 150, y: 64, w: 90, spawn: 1 }, { x: 380, y: 56, w: 80 }],
@@ -324,7 +333,7 @@ const REALMS = [
       { x: 0, y: 122, w: 74 }, { x: 572, y: 122, w: 68 }, { x: 236, y: 112, w: 96, spawn: 1 },
       { x: 400, y: 66, w: 84 }, { x: 128, y: 58, w: 66 },
     ] },
-  { name: 'Crystal Caverns', sub: 'REALM II', theme: 'cave', boss: 'moth', bossName: 'PRISM MOTH', bossTitle: 'Prism Moth', intro: 'Bumping the ceiling shakes the crystals loose', tip: 'Crystals crush your enemies too', hint: 'Falling crystals crush riders, including your enemies.',
+  { name: 'Crystal Caverns', sub: 'REALM II', theme: 'cave', insect: 'firefly', foes: 'Lantern Flies', boss: 'moth', bossName: 'PRISM MOTH', bossTitle: 'Prism Moth', intro: 'Bumping the ceiling shakes the crystals loose', tip: 'Crystals crush your enemies too', hint: 'Falling crystals crush riders, including your enemies.',
     extra: [
       [{ x: 0, y: 300, w: 110, shore: 1 }, { x: 530, y: 300, w: 110, shore: 1 }, { x: 230, y: 258, w: 110, spawn: 1 }, { x: 60, y: 214, w: 90, spawn: 1 }, { x: 460, y: 206, w: 100, spawn: 1 },
        { x: 300, y: 160, w: 80 }, { x: 120, y: 130, w: 80 }, { x: 500, y: 120, w: 80, spawn: 1 }, { x: 0, y: 76, w: 60 }, { x: 580, y: 76, w: 60 }, { x: 250, y: 82, w: 90 }],
@@ -339,7 +348,7 @@ const REALMS = [
       { x: 470, y: 162, w: 104 }, { x: 246, y: 152, w: 118, spawn: 1 },
       { x: 0, y: 100, w: 58 }, { x: 590, y: 100, w: 50 }, { x: 132, y: 84, w: 78 }, { x: 384, y: 78, w: 72 },
     ] },
-  { name: 'Storm Peaks', sub: 'REALM III', theme: 'storm', boss: 'drake', bossName: 'STORM DRAKE', bossTitle: 'Storm Drake', intro: 'Wind gusts push every rider', tip: 'Lightning strikes where the sky glows', hint: 'Watch for glowing columns: lightning strikes there a moment later.',
+  { name: 'Storm Peaks', sub: 'REALM III', theme: 'storm', insect: 'mosquito', foes: 'Mosquitoes', boss: 'drake', bossName: 'STORM DRAKE', bossTitle: 'Storm Drake', intro: 'Wind gusts push every rider', tip: 'Lightning strikes where the sky glows', hint: 'Watch for glowing columns: lightning strikes there a moment later.',
     extra: [
       [{ x: 0, y: 300, w: 100, shore: 1 }, { x: 540, y: 300, w: 100, shore: 1 }, { x: 180, y: 262, w: 90, spawn: 1 }, { x: 380, y: 250, w: 100, spawn: 1 }, { x: 40, y: 200, w: 80 }, { x: 520, y: 196, w: 90, spawn: 1 },
        { x: 250, y: 180, w: 100, move: { ax: 50, sp: 0.016 } }, { x: 80, y: 120, w: 80, spawn: 1 }, { x: 470, y: 110, w: 80 }, { x: 280, y: 70, w: 80 }],
@@ -354,7 +363,7 @@ const REALMS = [
       { x: 250, y: 170, w: 86 }, { x: 492, y: 146, w: 92, spawn: 1 },
       { x: 0, y: 96, w: 70 }, { x: 590, y: 90, w: 50 }, { x: 150, y: 80, w: 80 }, { x: 360, y: 70, w: 80 },
     ] },
-  { name: 'Ember Isles', sub: 'REALM IV', theme: 'ember', boss: 'wyrm', bossName: 'MAGMA WYRM', bossTitle: 'Magma Wyrm', intro: 'Cracked islands crumble under you', tip: 'Fireballs leap from the lava', hint: 'Cracked islands fall a moment after you land. Keep moving.',
+  { name: 'Ember Isles', sub: 'REALM IV', theme: 'ember', insect: 'beetle', foes: 'Fire Beetles', boss: 'wyrm', bossName: 'MAGMA WYRM', bossTitle: 'Magma Wyrm', intro: 'Cracked islands crumble under you', tip: 'Fireballs leap from the lava', hint: 'Cracked islands fall a moment after you land. Keep moving.',
     extra: [
       [{ x: 0, y: 300, w: 90, shore: 1 }, { x: 550, y: 300, w: 90, shore: 1 }, { x: 170, y: 262, w: 90, spawn: 1 }, { x: 380, y: 262, w: 90, spawn: 1 }, { x: 40, y: 200, w: 80, crumble: 1 }, { x: 520, y: 200, w: 80, crumble: 1 },
        { x: 270, y: 196, w: 100, spawn: 1 }, { x: 150, y: 130, w: 70, move: { ax: 40, sp: 0.015 } }, { x: 420, y: 124, w: 80, crumble: 1 }, { x: 270, y: 70, w: 100 }],
@@ -369,12 +378,12 @@ const REALMS = [
       { x: 262, y: 190, w: 116, spawn: 1 }, { x: 60, y: 130, w: 80, spawn: 1 }, { x: 500, y: 130, w: 80 },
       { x: 255, y: 104, w: 70, crumble: 1 }, { x: 390, y: 58, w: 70 }, { x: 160, y: 56, w: 60 },
     ] },
-  { name: 'Sunscorch Dunes', sub: 'REALM V', theme: 'desert', boss: 'scarab', bossName: 'SCARAB KING', bossTitle: 'Scarab King', intro: 'Sand twisters fling riders skyward', tip: 'Ride a twister to climb fast', hint: 'Twisters lift anything they touch, enemies included. Use them or dodge them.',
+  { name: 'Sunscorch Dunes', sub: 'REALM V', theme: 'desert', insect: 'locust', foes: 'Locusts', boss: 'scarab', bossName: 'SCARAB KING', bossTitle: 'Scarab King', intro: 'Sand twisters fling riders skyward', tip: 'Ride a twister to climb fast', hint: 'Twisters lift anything they touch, enemies included. Use them or dodge them.',
     plats: [
       { x: 0, y: 300, w: 100, shore: 1 }, { x: 540, y: 300, w: 100, shore: 1 }, { x: 130, y: 238, w: 90, spawn: 1 }, { x: 420, y: 238, w: 90, spawn: 1 },
       { x: 260, y: 160, w: 120 }, { x: 30, y: 110, w: 60 }, { x: 550, y: 110, w: 60 },
     ] },
-  { name: 'Cloud Citadel', sub: 'REALM VI', theme: 'sky', boss: 'jelly', bossName: 'AURORA JELLY', bossTitle: 'Aurora Jelly', intro: 'Pink pads bounce you high into the sky', tip: 'Faded clouds vanish. Do not stand still', hint: 'Bounce pads launch you upward. Faded clouds disappear for a moment.',
+  { name: 'Cloud Citadel', sub: 'REALM VI', theme: 'sky', insect: 'ladybug', foes: 'Ladybugs', boss: 'jelly', bossName: 'AURORA JELLY', bossTitle: 'Aurora Jelly', intro: 'Pink pads bounce you high into the sky', tip: 'Faded clouds vanish. Do not stand still', hint: 'Bounce pads launch you upward. Faded clouds disappear for a moment.',
     plats: [
       { x: 0, y: 300, w: 100, shore: 1 }, { x: 540, y: 300, w: 100, shore: 1 }, { x: 120, y: 240, w: 90, spawn: 1 }, { x: 430, y: 240, w: 90, spawn: 1 },
       { x: 270, y: 262, w: 100, bounce: 1 }, { x: 30, y: 150, w: 70 }, { x: 540, y: 150, w: 70 }, { x: 250, y: 120, w: 140, phase: { ph: 0 } },
@@ -908,7 +917,7 @@ let wind = { t: 0, dir: 1, cd: 600 }, bolts = [], bursts = [], boltCd = 300, bur
 function makeRider(isPlayer, tier, cx, bottom) {
   return { isPlayer, tier, x: cx - RW / 2, y: bottom - RH, w: RW, h: RH, vx: 0, vy: 0, face: Math.random() < 0.5 ? 1 : -1,
     onGround: true, wingT: 0, flapCd: 0, holdT: 0, state: 'spawn', st: isPlayer ? 150 : 55, invuln: 0, bump: 0, combo: 0,
-    hp: tier + 1, hit: 0, en: 100, fireCd: 0, boostT: 0, boostCd: 0, shootCd: 220 + Math.random() * 160,
+    sp: isPlayer ? null : REALMS[realm].insect, hp: tier + 1 + (isPlayer ? 0 : (INSECTS[REALMS[realm].insect] || INSECTS.wasp).hp), hit: 0, en: 100, fireCd: 0, boostT: 0, boostCd: 0, shootCd: 220 + Math.random() * 160,
     pw: { shield: false, lance: 0, dash: 0, magnet: 0, frost: 0 }, ai: { t: 0, ty: 120, dir: 1 }, anim: Math.random() * 10 };
 }
 function makeWalker(p, spiky) {
@@ -1065,10 +1074,11 @@ function moveBody(b) {
 function control(r, dir, flap) {
   const dash = r.isPlayer && r.pw.dash > 0, boosting = r.isPlayer && r.boostT > 0;
   const wingK = r.isPlayer ? 1 + 0.05 * UP('wing') : 1;
-  const airMax = boosting ? 7.5 : r.isPlayer ? (dash ? 5.4 : 3.8) * wingK : [2.0, 2.6, 3.2][r.tier];
+  const ins = r.isPlayer ? null : insectOf(r);
+  const airMax = boosting ? 7.5 : r.isPlayer ? (dash ? 5.4 : 3.8) * wingK : [2.0, 2.6, 3.2][r.tier] * ins.air;
   if (dir) r.face = dir;
   if (flap) {
-    r.vy = Math.max(r.vy - FLAP * (r.isPlayer ? 1 + 0.03 * UP('wing') : 1), VY_MIN); r.wingT = 12; r.onGround = false;
+    r.vy = Math.max(r.vy - FLAP * (r.isPlayer ? 1 + 0.03 * UP('wing') : ins.flap), VY_MIN); r.wingT = 12; r.onGround = false;
     if (dir) r.vx += dir * (dash ? 0.9 : 0.4);
     if (r.isPlayer) SFX.flap();
   }
@@ -1080,7 +1090,7 @@ function control(r, dir, flap) {
     else if (!boosting) r.vx *= r.isPlayer ? 0.975 : 0.995;
   }
   r.vx = clamp(r.vx, -airMax, airMax);
-  if (boosting) r.vy *= 0.85; else r.vy = Math.min(r.vy + G, VY_MAX);
+  if (boosting) r.vy *= 0.85; else r.vy = Math.min(r.vy + G * (ins ? ins.grav : 1), VY_MAX);
   if (wind.t > 0 && !r.onGround) r.vx += wind.dir * 0.045;
   moveBody(r);
   if (r.wingT > 0) r.wingT--;
@@ -1206,7 +1216,7 @@ function updateEnemy(e) {
   if (e.state === 'spawn') { if (e.kind === 'walker') { e.vx = 0; e.vy = Math.min(e.vy + G, VY_MAX); moveBody(e); } if (--e.st <= 0) e.state = 'active'; return; }
   if (e.state === 'hatch') {
     e.st--;
-    if (e.st === 30) fleers.push({ x: e.x + 9 + (e.face > 0 ? -140 : 140), y: e.y - 60, tx: e.x, ty: e.y, tier: e.tier, face: e.face, arrive: true, t: 30 });
+    if (e.st === 30) fleers.push({ x: e.x + 9 + (e.face > 0 ? -140 : 140), y: e.y - 60, tx: e.x, ty: e.y, tier: e.tier, sp: e.sp, face: e.face, arrive: true, t: 30 });
     if (e.st <= 0) { e.state = 'active'; e.vy = -2; burst(e.x + 9, e.y + 14, 14, PAL_E[e.tier].plume, 1.5, 30, 1.5); }
     return;
   }
@@ -1245,7 +1255,7 @@ function updateEnemy(e) {
   }
   let flap = false;
   if (e.flapCd > 0) e.flapCd--;
-  if (e.flapCd <= 0 && (e.y > a.ty + 4 || (e.y > 270 && e.vy > 0))) { flap = true; e.flapCd = [17, 13, 9][e.tier] + Math.floor(rnd(0, 7)); }
+  if (e.flapCd <= 0 && (e.y > a.ty + 4 || (e.y > 270 && e.vy > 0))) { flap = true; e.flapCd = Math.round(([17, 13, 9][e.tier] + rnd(0, 7)) * (insectOf(e).leap ? 1.6 : 1)); }
   control(e, a.dir, flap);
   if (e.hitCeil) shakeStal(e.x + 9);
   if (e.hit > 0) e.hit--;
@@ -1284,7 +1294,7 @@ function defeat(e, how) {
     if (mult >= 2) banner = { text: 'COMBO x' + mult, sub: '', t: 45 };
     addGems(ENEMY_GEMS[e.tier] + (mult >= 3 ? 1 : 0), e.x + 9, e.y - 6);
     cocoons.push(makeCocoon(e.x + 9, e.y + 8, e.vx * 0.6, -1.2, e.tier));
-    fleers.push({ x: e.x + 9, y: e.y, vx: e.face * 2.6, vy: -1.4, tier: e.tier, face: e.face, t: 0 });
+    fleers.push({ x: e.x + 9, y: e.y, vx: e.face * 2.6, vy: -1.4, tier: e.tier, sp: e.sp, face: e.face, t: 0 });
   } else if (how === 'crush') {
     addScore(300, e.x + 9, e.y - 6, 'CRUSHED +300');
   } else if (how === 'zap') {
@@ -1814,7 +1824,7 @@ function defeatBoss() {
   const b = boss;
   for (let i = 0; i < 5; i++) burst(b.x + rnd(-20, 20), b.y + rnd(-15, 15), 30, ['#ffd84a', '#ff8ad8', '#8ff3ff', '#ffffff', '#c6ff7a'][i], 4, 70, 2.4);
   addScore(10000, b.x, b.y - 30, 'BOSS DEFEATED +10,000'); addGems(80);
-  for (const e of enemies) fleers.push({ x: e.x + 9, y: e.y, vx: (e.face || 1) * 2.6, vy: -1.6, tier: e.tier, face: e.face, t: 0 });
+  for (const e of enemies) if (!e.kind) fleers.push({ x: e.x + 9, y: e.y, vx: (e.face || 1) * 2.6, vy: -1.6, tier: e.tier, sp: e.sp, face: e.face, t: 0 });
   enemies = []; pending = []; cocoons.forEach(c => burst(c.x + 5, c.y + 6, 10, '#fff6c8', 1.5, 25)); cocoons = []; shots = []; bolts = [];
   boss = null; shake = 16; flash = 14; SFX.up(); buzz('heavy');
   banner = { text: 'VICTORY', sub: REALMS[realm].bossName + ' DEFEATED', t: 140 };
@@ -2043,6 +2053,88 @@ function drawWalker(g, r) {
   g.fillStyle = r.spiky ? '#ff5050' : wp.eye; g.beginPath(); g.arc(10.4, 18.8, 1, 0, TAU); g.fill();
   if (!r.spiky) { g.strokeStyle = wp.s1; g.lineWidth = 1; g.beginPath(); g.moveTo(10.5, 17.2); g.quadraticCurveTo(13, 14.5, 14.6, 15.4); g.stroke(); }
 }
+function drawFirefly(g, pal, r) {
+  const a = wingAngle(r, false);
+  drawWing(g, -1, 13.5, 14, 4.5, a + 0.25, 'rgba(230,220,180,.35)', 'rgba(255,255,255,.12)');
+  glow(g, -8, 17.5, 10, pal.plume, 0.85);
+  const lg = g.createRadialGradient(-8, 17, 0.5, -8, 17.5, 5.5); lg.addColorStop(0, '#ffffff'); lg.addColorStop(0.45, pal.plume); lg.addColorStop(1, '#4a4a18');
+  g.fillStyle = lg; g.beginPath(); g.ellipse(-7.5, 17.6, 5.5, 3.6, 0.1, 0, TAU); g.fill();
+  g.fillStyle = '#2e2618'; g.beginPath(); g.ellipse(-1.5, 16.5, 4.5, 3.2, 0, 0, TAU); g.fill();
+  g.fillStyle = '#3a3020'; g.beginPath(); g.ellipse(2.5, 15.6, 3.6, 3, 0, 0, TAU); g.fill();
+  g.fillStyle = '#d04a2a'; g.beginPath(); g.ellipse(5.6, 14.8, 2.6, 2.2, 0, 0, TAU); g.fill();
+  g.fillStyle = '#111'; g.beginPath(); g.arc(7, 15.8, 1.2, 0, TAU); g.fill();
+  g.strokeStyle = '#2e2618'; g.lineWidth = 0.7;
+  g.beginPath(); g.moveTo(7, 13.6); g.quadraticCurveTo(9, 11, 11, 10.6); g.moveTo(-1, 18.8); g.lineTo(-2.5, 22.5); g.moveTo(2.5, 18.5); g.lineTo(3.5, 22.5); g.stroke();
+  g.fillStyle = 'rgba(70,58,34,.92)'; g.beginPath(); g.ellipse(-1.5, 14.8, 6, 2.2, -0.08, 0, TAU); g.fill();
+  drawWing(g, 1, 13, 15, 5, a, 'rgba(240,235,200,.45)', 'rgba(255,255,255,.12)');
+}
+function drawMosquito(g, pal, r) {
+  const a = wingAngle(r, true);
+  drawWing(g, 0, 13, 13, 3.4, a + 0.25, 'rgba(220,230,255,.35)', 'rgba(255,255,255,.1)');
+  g.strokeStyle = '#2a2a34'; g.lineWidth = 0.6;
+  for (const i of [-3, 0, 3]) { g.beginPath(); g.moveTo(i, 17.5); g.lineTo(i - 3, 21 + Math.sin(frame * 0.2 + i) * 0.5); g.lineTo(i - 5.5, 25.5); g.stroke(); }
+  g.save(); g.beginPath(); g.ellipse(-7, 16.8, 8, 2.3, 0.12, 0, TAU);
+  const ag = g.createLinearGradient(-15, 0, 1, 0); ag.addColorStop(0, '#3a3a48'); ag.addColorStop(1, pal.body1);
+  g.fillStyle = ag; g.fill(); g.clip();
+  g.fillStyle = 'rgba(255,255,255,.5)'; for (const sx of [-13, -10, -7, -4]) g.fillRect(sx, 13, 1.2, 8);
+  g.restore();
+  g.fillStyle = '#2e2e3a'; g.beginPath(); g.ellipse(1.5, 15.4, 3.2, 2.8, 0, 0, TAU); g.fill();
+  g.fillStyle = '#22222c'; g.beginPath(); g.arc(5.2, 15, 2, 0, TAU); g.fill();
+  glow(g, 5.9, 14.6, 3, 'rgba(255,80,80,.9)', 0.8); g.fillStyle = '#ff5a5a'; g.beginPath(); g.arc(5.9, 14.6, 1.1, 0, TAU); g.fill();
+  g.strokeStyle = '#1a1a22'; g.lineWidth = 0.75; g.beginPath(); g.moveTo(6.8, 15.8); g.lineTo(14.5, 17.6); g.stroke();
+  g.strokeStyle = '#3a3a48'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(6, 13.4); g.lineTo(8.8, 10.8); g.moveTo(5.4, 13.2); g.lineTo(7, 10.2); g.stroke();
+  drawWing(g, 1, 12.8, 14, 3.6, a, 'rgba(230,240,255,.5)', 'rgba(255,255,255,.12)');
+}
+function drawFireBeetle(g, pal, r) {
+  const a = wingAngle(r, false);
+  if (!r.onGround) { drawWing(g, -1, 13, 15, 4.5, a + 0.25, 'rgba(255,200,150,.35)', 'rgba(255,120,60,.15)'); drawWing(g, 1, 13, 16, 5, a, 'rgba(255,200,150,.42)', 'rgba(255,120,60,.15)'); }
+  g.strokeStyle = '#1a0604'; g.lineWidth = 0.9;
+  g.beginPath(); g.moveTo(-4, 19); g.lineTo(-6, 22.5); g.moveTo(0, 19.5); g.lineTo(0, 22.5); g.moveTo(3.5, 19); g.lineTo(5, 22.5); g.stroke();
+  const sg = g.createLinearGradient(0, 11, 0, 21); sg.addColorStop(0, '#7a2a18'); sg.addColorStop(0.4, '#4a140a'); sg.addColorStop(1, '#140402');
+  g.fillStyle = sg; g.beginPath(); g.ellipse(-1.5, 16.2, 8, 5, 0, 0, TAU); g.fill();
+  glow(g, -2, 16, 6, pal.plume, 0.5);
+  g.strokeStyle = '#ff8a3a'; g.lineWidth = 0.6;
+  g.beginPath(); g.moveTo(2, 12.4); g.lineTo(-1, 15); g.lineTo(-4, 14); g.moveTo(-1, 15); g.lineTo(-3, 19); g.moveTo(-6, 15.5); g.lineTo(-8.5, 17.5); g.stroke();
+  g.fillStyle = 'rgba(255,200,150,.3)'; g.beginPath(); g.ellipse(-3, 13.4, 4, 1, -0.1, 0, TAU); g.fill();
+  g.fillStyle = '#2a0c08'; g.beginPath(); g.arc(6.4, 16.4, 2.7, 0, TAU); g.fill();
+  g.strokeStyle = '#3a140c'; g.lineWidth = 1.4; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(8, 15.2); g.quadraticCurveTo(11.5, 12.8, 13.2, 14.4); g.moveTo(8, 17.6); g.quadraticCurveTo(11.5, 20, 13.2, 18.4); g.stroke();
+  glow(g, 7.4, 15.6, 2.8, 'rgba(255,180,60,.9)'); g.fillStyle = '#ffd060'; g.beginPath(); g.arc(7.4, 15.6, 0.7, 0, TAU); g.fill();
+}
+function drawLocust(g, pal, r) {
+  const a = wingAngle(r, false);
+  drawWing(g, -2, 13.8, 17, 4.2, a + 0.2, 'rgba(220,210,150,.4)', 'rgba(180,170,110,.2)');
+  const kick = r.wingT > 0 ? r.wingT / 12 : 0;
+  g.strokeStyle = '#6a7a2a'; g.lineCap = 'round';
+  g.lineWidth = 2.2; g.beginPath(); g.moveTo(-2, 17.5); g.lineTo(-6, 12.5 + kick * 3); g.stroke();
+  g.lineWidth = 1.1; g.beginPath(); g.moveTo(-6, 12.5 + kick * 3); g.lineTo(-11 - kick * 3, 20 + kick * 2); g.stroke();
+  const ag = g.createLinearGradient(0, 13, 0, 21); ag.addColorStop(0, '#b8c85a'); ag.addColorStop(1, '#5a6a1a');
+  g.fillStyle = ag; g.beginPath(); g.ellipse(-6, 17, 7.5, 3, 0.08, 0, TAU); g.fill();
+  g.fillStyle = pal.body1; g.globalAlpha = 0.55; for (const sx of [-10, -7, -4]) g.fillRect(sx, 15, 1, 4.5); g.globalAlpha = 1;
+  g.fillStyle = '#8a9a3a'; g.beginPath(); g.ellipse(1.6, 16, 3.8, 3.2, 0, 0, TAU); g.fill();
+  g.fillStyle = 'rgba(255,255,200,.35)'; g.beginPath(); g.ellipse(1.2, 14.4, 2.6, 0.9, 0, 0, TAU); g.fill();
+  g.fillStyle = '#9aaa44'; g.beginPath(); g.ellipse(6, 16.4, 2.8, 3, 0.2, 0, TAU); g.fill();
+  g.fillStyle = '#4a2a10'; g.beginPath(); g.arc(6.9, 15.4, 1.25, 0, TAU); g.fill();
+  g.strokeStyle = '#5a6a1a'; g.lineWidth = 0.5;
+  g.beginPath(); g.moveTo(7.5, 13.8); g.lineTo(14, 9); g.moveTo(7, 13.6); g.lineTo(12, 8.2); g.moveTo(3, 19); g.lineTo(4.5, 22.5); g.moveTo(5.5, 18.8); g.lineTo(7.5, 22); g.stroke();
+  drawWing(g, 0, 13.6, 18, 4.4, a, 'rgba(235,225,170,.52)', 'rgba(190,180,120,.2)');
+}
+function drawLadybug(g, pal, r) {
+  const a = wingAngle(r, false);
+  if (!r.onGround) { drawWing(g, -2, 13.5, 15, 5, a + 0.25, 'rgba(230,240,255,.4)', 'rgba(255,255,255,.12)'); drawWing(g, 0, 13.5, 16, 5.4, a, 'rgba(230,240,255,.5)', 'rgba(255,255,255,.14)'); }
+  g.strokeStyle = '#141418'; g.lineWidth = 0.8;
+  g.beginPath(); g.moveTo(-3, 20); g.lineTo(-4.5, 22.5); g.moveTo(0.5, 20.5); g.lineTo(0.5, 22.8); g.moveTo(3.5, 20); g.lineTo(5, 22.5); g.stroke();
+  const dc = [['#ff7a6a', '#c41a1a'], ['#ffc06a', '#c45a0a'], ['#c89aff', '#5a1ab4']][r.tier || 0];
+  const sg = g.createRadialGradient(-3, 13.5, 0.5, -1, 16.5, 8.5); sg.addColorStop(0, dc[0]); sg.addColorStop(1, dc[1]);
+  g.fillStyle = sg; g.beginPath(); g.ellipse(-1, 16.6, 7.6, 5.3, 0, Math.PI, TAU); g.ellipse(-1, 16.6, 7.6, 3.4, 0, 0, Math.PI); g.fill();
+  g.strokeStyle = 'rgba(20,10,10,.8)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(4.5, 13); g.quadraticCurveTo(-1, 15.5, -8.4, 17); g.stroke();
+  g.fillStyle = '#141418'; for (const [sx, sy, sr] of [[-4.5, 14.2, 1.3], [0, 13.4, 1.1], [-1.5, 18, 1.2], [-6.5, 17.4, 1], [2.8, 17.2, 1]]) { g.beginPath(); g.arc(sx, sy, sr, 0, TAU); g.fill(); }
+  g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(-3, 12.8, 2.6, 0.9, -0.3, 0, TAU); g.fill();
+  g.fillStyle = '#141418'; g.beginPath(); g.ellipse(6, 17, 2.7, 2.5, 0, 0, TAU); g.fill();
+  g.fillStyle = '#ffffff'; g.beginPath(); g.arc(6.6, 16, 0.7, 0, TAU); g.arc(7.4, 18, 0.5, 0, TAU); g.fill();
+  g.strokeStyle = '#141418'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(7, 15); g.lineTo(9.4, 12.6); g.stroke();
+  g.fillStyle = '#141418'; g.beginPath(); g.arc(9.6, 12.4, 0.7, 0, TAU); g.fill();
+}
 function drawRiderAt(g, r, cx, y, palOverride, mountId) {
   const isP = r.isPlayer, pal = palOverride || (isP ? playerPal() : PAL_E[r.tier]);
   g.save(); g.translate(cx, y + RH); g.scale(r.face * SPR, SPR); g.translate(0, -RH);
@@ -2050,7 +2142,7 @@ function drawRiderAt(g, r, cx, y, palOverride, mountId) {
   if (r.state === 'hatch') drawKnight(g, pal, false, true, frame * 0.2);
   else {
     glow(g, 0, 13, 16, isP ? 'rgba(90,220,255,.18)' : 'rgba(255,120,80,.10)');
-    if (isP) MOUNTS[mountId || save.eq.mount].draw(g, pal, r); else drawWasp(g, pal, r);
+    if (isP) MOUNTS[mountId || save.eq.mount].draw(g, pal, r); else insectOf(r).draw(g, pal, r);
     drawKnight(g, pal, isP, false, frame * 0.25 + r.anim, isP && r.pw && r.pw.lance > 0);
   }
   g.restore();
@@ -2072,6 +2164,7 @@ function drawRider(r) {
     ctx.globalCompositeOperation = 'source-over';
   }
   if (r.isPlayer && r.invuln > 0 && r.state === 'active') alpha = (frame >> 2) % 2 ? 0.45 : 1;
+  if (!r.isPlayer && !r.kind && r.state === 'active' && insectOf(r).flicker) { if (r.flk === undefined) r.flk = Math.floor(Math.random() * 260); const ph = (frame + r.flk) % 260; if (ph < 45) alpha = 0.22 + 0.1 * Math.sin(frame * 0.5); }
   const frozen = !r.isPlayer && P && P.pw.frost > 0 && r.state === 'active';
   if (r.isPlayer && r.boostT > 0) for (let i = 1; i <= 3; i++) { ctx.globalAlpha = 0.28 / i; drawWrapped(r.x, 44, x => drawRiderAt(ctx, r, x + 9 - r.face * i * 9, r.y)); }
   ctx.globalAlpha = alpha;
@@ -2116,10 +2209,10 @@ function drawCocoon(c) {
   });
 }
 function drawFleer(f) {
-  const fake = { wingT: 0, onGround: false, anim: f.t };
+  const fake = { wingT: 0, onGround: false, anim: f.t, tier: f.tier };
   ctx.save(); ctx.translate(f.x, f.y + RH); const fs = f.arrive ? f.face : Math.sign(f.vx) || 1; ctx.scale(fs * SPR, SPR); ctx.translate(0, -RH);
   ctx.globalAlpha = f.arrive ? 1 : clamp(1 - f.t / 80, 0, 1);
-  drawWasp(ctx, PAL_E[f.tier], fake);
+  insectOf(f).draw(ctx, PAL_E[f.tier], fake);
   ctx.restore(); ctx.globalAlpha = 1;
 }
 function drawPwIcon(g, type, x, y, s) {
@@ -2687,7 +2780,7 @@ function openMap(r) {
   game.state = 'menu'; P = null; boss = null; parts = []; texts = [];
   if (realm !== mapRealm || layout !== 1) setRealm(mapRealm);
   const R = REALMS[mapRealm];
-  $('realm-sub').textContent = R.sub; $('realm-name').textContent = R.name;
+  $('realm-sub').textContent = R.sub + ' \u00B7 ' + R.foes.toUpperCase(); $('realm-name').textContent = R.name;
   $('b-realm-prev').disabled = mapRealm === 0; $('b-realm-next').disabled = mapRealm === REALMS.length - 1;
   const box = $('levels'); box.innerHTML = '';
   for (let l = 1; l <= 10; l++) {
