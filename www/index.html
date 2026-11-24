@@ -25,10 +25,14 @@
   #bf svg{margin-bottom:12%}
   #bp{right:calc(14px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));width:40px;height:40px;border-radius:12px}
   .hide{display:none!important}
+  #rotate{display:none;position:fixed;left:0;right:0;top:calc(18px + env(safe-area-inset-top));text-align:center;
+    font:600 14px system-ui,sans-serif;color:#cfe6ff;opacity:.85;pointer-events:none}
+  @media (orientation: portrait) and (pointer: coarse){#rotate{display:block}}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="rotate">Turn your phone sideways to play</div>
 <div id="touch" class="hide">
   <div class="btn" id="bl"><svg viewBox="0 0 24 24"><path d="M15.5 4 7 12l8.5 8 1.9-1.9L10.9 12l6.5-6.1z"/></svg></div>
   <div class="btn" id="br"><svg viewBox="0 0 24 24"><path d="M8.5 4 17 12l-8.5 8-1.9-1.9 6.5-6.1-6.5-6.1z"/></svg></div>
@@ -41,7 +45,7 @@
 //  SKYLANCE — an original flap-and-joust arcade game
 // ====================================================================
 const W = 640, H = 360, SEA = 332;
-const G = 0.13, FLAP = 2.5, VY_MAX = 4.2, VY_MIN = -4.2;
+const G = 0.115, FLAP = 2.35, VY_MAX = 3.6, VY_MIN = -4;
 const RW = 18, RH = 24;                       // rider box
 const SPR = 1.45;                              // visual sprite scale
 const TAU = Math.PI * 2;
@@ -431,18 +435,19 @@ function moveBody(b) {
   if (b.y < 0) { b.y = 0; b.vy = 0.8; }
 }
 function control(r, dir, flap) {
-  const airMax = r.isPlayer ? 4 : [2.0, 2.7, 3.4][r.tier];
+  const airMax = r.isPlayer ? 3.4 : [2.0, 2.6, 3.2][r.tier];
   if (dir) r.face = dir;
   if (flap) {
     r.vy = Math.max(r.vy - FLAP, VY_MIN); r.wingT = 12; r.onGround = false;
-    if (dir) r.vx += dir * 0.6;
+    if (dir) r.vx += dir * 0.4;
     if (r.isPlayer) SFX.flap();
   }
   if (r.onGround) {
-    if (dir) r.vx = clamp(r.vx + dir * 0.18, -2.9, 2.9); else r.vx *= 0.84;
+    if (dir) r.vx = clamp(r.vx + dir * 0.2, -2.4, 2.4); else r.vx *= 0.8;
   } else {
-    if (dir) r.vx += dir * 0.02;
-    r.vx *= 0.997;
+    // responsive air steering: players get strong control, enemies a bit less
+    if (dir) r.vx += dir * (r.isPlayer ? 0.16 : 0.08);
+    else r.vx *= r.isPlayer ? 0.975 : 0.995;
   }
   r.vx = clamp(r.vx, -airMax, airMax);
   r.vy = Math.min(r.vy + G, VY_MAX);
