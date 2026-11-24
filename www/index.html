@@ -350,11 +350,77 @@ const REALMS = [
       { x: 255, y: 104, w: 70, crumble: 1 }, { x: 390, y: 58, w: 70 }, { x: 160, y: 56, w: 60 },
     ] },
 ];
-let realm = 0, layout = 0, PLATS = [], SPAWNS = [], SEA_L = 122, SEA_R = 518, THEME = 'sea';
-function setRealm(i, li = 0) {
-  realm = i; layout = li; const R = REALMS[i]; THEME = R.theme;
-  const src = li === 0 ? R.plats : R.extra[li - 1];
-  PLATS = src.map((p, j) => ({ ...p, h: p.shore ? SEA - p.y + 30 : 12, id: j + i * 20 + li * 100, ct: 0, gone: 0, bx: p.x, by: p.y, dx: 0, dy: 0 }));
+let realm = 0, layout = 1, PLATS = [], SPAWNS = [], SEA_L = 122, SEA_R = 518, THEME = 'sea';
+// ---------- layouts: hand-built for levels 1/4/7/10, generated for the rest ----------
+function layoutOK(out) {
+  const plats = out.filter(p => !p.shore), shoreTop = 300;
+  for (let t = 0; t < 700; t += 7) {
+    const pos = plats.map(q => { if (!q.move) return [q.x, q.y]; const ph = t * q.move.sp + (q.move.ph || 0); return [q.x + Math.sin(ph) * (q.move.ax || 0), q.y + Math.sin(ph) * (q.move.ay || 0)]; });
+    for (let i = 0; i < plats.length; i++) {
+      const [xi, yi] = pos[i];
+      if (xi < -1 || xi + plats[i].w > W + 1) return false;
+      if (shoreTop - yi < 40) { const sw = out[0].w; if (xi < sw || xi + plats[i].w > W - out[1].w) return false; }
+      for (let j = i + 1; j < plats.length; j++) {
+        const [xj, yj] = pos[j], dy = Math.abs(yi - yj);
+        const ox = Math.min(xi + plats[i].w, xj + plats[j].w) - Math.max(xi, xj);
+        if (ox > -34 && dy < 42) return false;
+      }
+    }
+  }
+  return true;
+}
+function genLayout(r, l) {
+  const theme = REALMS[r].theme;
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const rand = seeded(7919 + r * 1000 + l * 37 + attempt * 101);
+    const Rn = (a, b) => a + rand() * (b - a);
+    const sw = Math.round(Rn(90, 116));
+    const out = [{ x: 0, y: 300, w: sw, shore: 1 }, { x: W - sw, y: 300, w: sw, shore: 1 }];
+    const rows = [256, 200, 142, 86, theme === 'cave' ? 46 : 40];
+    const counts = [2, 2 + (rand() < 0.5 ? 1 : 0), 2 + (rand() < 0.6 ? 1 : 0), 2 + (rand() < 0.5 ? 1 : 0), 1 + (rand() < 0.5 ? 1 : 0)];
+    rows.forEach((ry, ri) => {
+      const segs = [];
+      let lo = 10, hi = W - 10;
+      if (ri === 0) { lo = sw + 6; hi = W - sw - 6; }
+      if (ri === 3 && rand() < 0.5) { const a = Math.round(Rn(50, 72)), b = Math.round(Rn(46, 68)); segs.push({ x: 0, w: a }, { x: W - b, w: b }); lo = a + 40; hi = W - b - 40; }
+      const n = counts[ri], span = (hi - lo) / n;
+      for (let k = 0; k < n; k++) {
+        const w = Math.round(Math.min(Rn(ri === 0 ? 96 : 68, ri === 0 ? 136 : 112) * (ri === 4 ? 0.8 : 1), span - 38));
+        if (w < 50) continue;
+        const cx = lo + span * (k + 0.5) + Rn(-span * 0.15, span * 0.15);
+        segs.push({ x: Math.round(clamp(cx - w / 2, lo, hi - w)), w });
+      }
+      for (const sg of segs) out.push({ x: sg.x, y: Math.round(ry + (ri === 0 ? Rn(-5, 0) : Rn(-5, 5))), w: sg.w, row: ri });
+    });
+    const body = out.filter(p => !p.shore);
+    const mids = body.filter(p => p.row >= 1 && p.row <= 3 && p.x > 0 && p.x + p.w < W);
+    body.filter(p => p.row === 0).forEach(p => p.spawn = 1);
+    const pool = mids.slice().sort(() => rand() - 0.5);
+    pool.slice(0, 2).forEach(p => p.spawn = 1);
+    const nm = Math.max(0, (l >= 2 ? 1 : 0) + (l >= 5 ? 1 : 0) + (l >= 8 ? 1 : 0) - (rand() < 0.35 ? 1 : 0));
+    pool.filter(p => !p.spawn).slice(0, nm).forEach(p => {
+      p.move = rand() < 0.55 ? { ax: Math.round(Rn(24, 50)), sp: +Rn(0.012, 0.02).toFixed(3), ph: +Rn(0, 6).toFixed(2) }
+        : { ay: Math.round(Rn(14, 22)), sp: +Rn(0.014, 0.022).toFixed(3), ph: +Rn(0, 6).toFixed(2) };
+    });
+    if (theme === 'ember') body.filter(p => !p.spawn && !p.move && p.row >= 1).sort(() => rand() - 0.5).slice(0, 2 + (l > 5 ? 1 : 0)).forEach(p => p.crumble = 1);
+    if (layoutOK(out)) return out.map(({ row, ...p }) => p);
+  }
+  return REALMS[r].plats;
+}
+const LAYOUT_CACHE = {};
+function layoutFor(r, l) {
+  const R = REALMS[r];
+  if (l === 1) return R.plats;
+  if (l === 4) return R.extra[0];
+  if (l === 7) return R.extra[1];
+  if (l === 10) return R.extra[2];
+  const k = r + '-' + l;
+  return LAYOUT_CACHE[k] || (LAYOUT_CACHE[k] = genLayout(r, l));
+}
+function setRealm(i, lvl = 1) {
+  realm = i; layout = lvl; const R = REALMS[i]; THEME = R.theme;
+  const src = layoutFor(i, lvl);
+  PLATS = src.map((p, j) => ({ ...p, h: p.shore ? SEA - p.y + 30 : 12, id: j + i * 20 + lvl * 100, ct: 0, gone: 0, bx: p.x, by: p.y, dx: 0, dy: 0 }));
   SPAWNS = PLATS.filter(p => p.spawn);
   const shores = PLATS.filter(p => p.shore);
   SEA_L = shores[0].x + shores[0].w; SEA_R = shores[1].x;
@@ -758,7 +824,7 @@ function spawnPlayer() {
 
 function startLevel(r, l) {
   game.mode = 'campaign'; game.realm = r; game.level = l;
-  setRealm(r, l === 10 ? 3 : Math.floor((l - 1) / 3)); resetRun();
+  setRealm(r, l); resetRun();
   score = 0; lives = 3 + UP('lives'); nextLife = 20000; wave = l; spawnPlayer();
   const d = l + r * 6;
   const R = REALMS[r];
@@ -767,7 +833,7 @@ function startLevel(r, l) {
     banner = { text: 'BOSS', sub: R.bossName + ' — strike it from above', t: 160 }; SFX.boss();
   } else if (l === 5) {
     const n = 5 + r * 2;
-    for (let i = 0; i < n; i++) { const p = PLATS[(i * 3 + 2) % PLATS.length]; cocoons.push(makeCocoon(p.x + 15 + Math.random() * (p.w - 30), p.y - 40, 0, 0, r, 220 + i * 30)); }
+    for (let i = 0; i < n; i++) { const p = PLATS[(i * 3 + 2) % PLATS.length]; cocoons.push(makeCocoon(p.x + 15 + Math.random() * (p.w - 30), p.y - 40, 0, 0, Math.min(r, 1), 220 + i * 30)); }
     enemyTotal = n;
     banner = { text: `${r + 1}-${l}`, sub: 'Hatchery! Grab the cocoons before they hatch', t: 150 }; SFX.wave();
   } else {
@@ -788,7 +854,7 @@ function startEndless() {
 }
 function startWave(n) {
   const open = REALMS.map((_, i) => i).filter(realmUnlocked);
-  const want = open[Math.floor((n - 1) / 5) % open.length], wantL = (n - 1) % 3;
+  const want = open[Math.floor((n - 1) / 5) % open.length], wantL = ((n - 1) % 9) + 1;
   if (want !== realm || wantL !== layout) { setRealm(want, wantL); initHazards(); cocoons = []; pickups = []; shots = []; spawnPlayer(); }
   wave = n; waveT = 0; deaths = 0; chain = 0; clearT = 0;
   serp.ph = 0; serp.cd = 400; orb = null; orbDone = false;
@@ -2307,7 +2373,7 @@ function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; syncTouchUI
 function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop']) $(id).textContent = fmt(save.gems); }
 function toggleSound() { save.muted = !save.muted; persist(); $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On'); }
 function goTitle() {
-  game.state = 'menu'; if (realm !== 0 || layout !== 0) setRealm(0);
+  game.state = 'menu'; if (realm !== 0 || layout !== 1) setRealm(0);
   P = null; enemies = []; parts = []; texts = []; boss = null;
   $('title-hint').textContent = isTouch ? 'Hold ◀ ▶ to steer • FLAP to fly • hold FIRE to shoot • » boosts' : 'Arrows steer • Space flap • X fire • Shift boost • Esc pause • M mute';
   show('s-title');
@@ -2320,7 +2386,7 @@ let mapRealm = 0;
 function openMap(r) {
   if (r !== undefined) mapRealm = r;
   game.state = 'menu'; P = null; boss = null; parts = []; texts = [];
-  if (realm !== mapRealm || layout !== 0) setRealm(mapRealm);
+  if (realm !== mapRealm || layout !== 1) setRealm(mapRealm);
   const R = REALMS[mapRealm];
   $('realm-sub').textContent = R.sub; $('realm-name').textContent = R.name;
   $('b-realm-prev').disabled = mapRealm === 0; $('b-realm-next').disabled = mapRealm === REALMS.length - 1;
@@ -2501,16 +2567,18 @@ let last = performance.now(), acc = 0;
 const STEP = 1000 / 60;
 function loop(t) {
   acc += Math.min(t - last, 100); last = t;
-  while (acc >= STEP) { update(); acc -= STEP; }
-  render();
   requestAnimationFrame(loop);
+  try {
+    while (acc >= STEP) { update(); acc -= STEP; }
+    render();
+  } catch (err) { acc = 0; console.error(err); }
 }
 setRealm(0);
 resize();
 goTitle();
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>
