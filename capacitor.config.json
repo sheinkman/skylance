@@ -1,0 +1,6 @@
+{
+  "appId": "com.skylance.game",
+  "appName": "Skylance",
+  "webDir": "www",
+  "android": { "backgroundColor": "#05060f" }
+}
