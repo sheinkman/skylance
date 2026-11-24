@@ -277,6 +277,12 @@ const PAL_E = [
 ];
 const ENEMY_PTS = [500, 750, 1500];
 const ENEMY_GEMS = [1, 2, 3];
+const WALKER_PAL = {
+  sea: { s1: '#7ff0c8', s2: '#0e5a5a', eye: '#d6ff5a' },
+  cave: { s1: '#bfe6ff', s2: '#2a4a8a', eye: '#ff7ad8' },
+  storm: { s1: '#e8f0ff', s2: '#4a5670', eye: '#7fd8ff' },
+  ember: { s1: '#ff9a52', s2: '#4a1208', eye: '#fff07a' },
+};
 
 const PW = {
   shield: { name: 'SHIELD', col: '#7ff0ff', dur: 0 },
@@ -421,6 +427,7 @@ function setRealm(i, lvl = 1) {
   realm = i; layout = lvl; const R = REALMS[i]; THEME = R.theme;
   const src = layoutFor(i, lvl);
   PLATS = src.map((p, j) => ({ ...p, h: p.shore ? SEA - p.y + 30 : 12, id: j + i * 20 + lvl * 100, ct: 0, gone: 0, bx: p.x, by: p.y, dx: 0, dy: 0 }));
+  for (const p of PLATS) if (p.move) { const ph = p.move.ph || 0; p.x = p.bx + Math.sin(ph) * (p.move.ax || 0); p.y = p.by + Math.sin(ph) * (p.move.ay || 0); }
   SPAWNS = PLATS.filter(p => p.spawn);
   const shores = PLATS.filter(p => p.shore);
   SEA_L = shores[0].x + shores[0].w; SEA_R = shores[1].x;
@@ -804,6 +811,20 @@ function makeRider(isPlayer, tier, cx, bottom) {
     hp: tier + 1, hit: 0, en: 100, fireCd: 0, boostT: 0, boostCd: 0, shootCd: 220 + Math.random() * 160,
     pw: { shield: false, lance: 0, dash: 0, magnet: 0, frost: 0 }, ai: { t: 0, ty: 120, dir: 1 }, anim: Math.random() * 10 };
 }
+function makeWalker(p, spiky) {
+  const e = makeRider(false, spiky ? 1 : 0, p.x + p.w / 2 + rnd(-p.w * 0.25, p.w * 0.25), p.y);
+  e.kind = 'walker'; e.spiky = !!spiky; e.dir = Math.random() < 0.5 ? -1 : 1; e.face = e.dir;
+  e.spd = rnd(0.45, 0.75) + (spiky ? 0.1 : 0) + realm * 0.05;
+  e.hp = spiky ? 3 : 2 + (realm >= 2 ? 1 : 0); e.st = 40; e.pts = spiky ? 700 : 400; e.home = p;
+  return e;
+}
+function addWalkers(n, spikyChance) {
+  let cands = PLATS.filter(p => !p.shore && !p.crumble && !p.spawn && p.w >= 60);
+  if (cands.length < n) cands = PLATS.filter(p => !p.shore && !p.crumble && p.w >= 60);
+  cands.sort(() => Math.random() - 0.5);
+  for (let i = 0; i < Math.min(n, cands.length); i++) enemies.push(makeWalker(cands[i], Math.random() < spikyChance));
+  return Math.min(n, cands.length);
+}
 function resetRun() {
   enemies = []; cocoons = []; pending = []; parts = []; texts = []; fleers = []; pickups = []; shots = []; pshots = []; fx = [];
   boss = null; orb = null; orbDone = false; serp.ph = 0; serp.cd = 400; chain = 0; clearT = 0; waveT = 0; deaths = 0; runGems = 0; enemyTotal = 0; pickupT = 600;
@@ -841,7 +862,9 @@ function startLevel(r, l) {
     const p1 = clamp((d - 1) * 0.12, 0, 0.6), p2 = clamp((d - 5) * 0.07, 0, 0.45);
     for (let i = 0; i < count; i++) { const x = Math.random(); pending.push({ tier: x < p2 ? 2 : x < p2 + p1 ? 1 : 0, delay: 40 + i * 50 }); }
     enemyTotal = count;
-    const subs = { 1: R.intro, 2: 'Power-ups float in. Grab them!', 3: 'Chain kills in the air for a combo', 4: R.tip };
+    const nw = l === 1 ? 0 : Math.min(1 + Math.floor((l - 2) / 3) + (r >= 2 ? 1 : 0), 3);
+    enemyTotal += addWalkers(nw, r === 0 ? (l >= 6 ? 0.3 : 0) : r === 1 ? 0.35 : 0.5);
+    const subs = { 1: R.intro, 2: r === 0 ? 'Shell Guards patrol the islands. Stomp or shoot them' : 'Power-ups float in. Grab them!', 3: r === 1 ? 'Spikers cannot be stomped. Shoot or boost into them' : 'Chain kills in the air for a combo', 4: R.tip };
     banner = { text: `${r + 1}-${l}`, sub: subs[l] || R.name, t: 140 }; SFX.wave();
   }
   if (l === 2) pickupT = 200;
@@ -866,6 +889,7 @@ function startWave(n) {
     const count = Math.min(3 + Math.floor(n * 0.8), 11);
     const p1 = clamp((n - 1) * 0.14, 0, 0.6), p2 = clamp((n - 4) * 0.07, 0, 0.45);
     for (let i = 0; i < count; i++) { const r = Math.random(); pending.push({ tier: r < p2 ? 2 : r < p2 + p1 ? 1 : 0, delay: 40 + i * 50 }); }
+    if (n >= 3) addWalkers(Math.min(1 + Math.floor(n / 6), 3), n >= 8 ? 0.45 : 0);
     banner = { text: 'WAVE ' + n, sub: n === 1 ? 'Strike from above to win the joust' : (n % 5 === 1 ? REALMS[realm].name : ''), t: 130 };
   }
   SFX.wave();
@@ -1074,7 +1098,7 @@ function killPlayer(fx = true) {
 }
 
 function updateEnemy(e) {
-  if (e.state === 'spawn') { if (--e.st <= 0) e.state = 'active'; return; }
+  if (e.state === 'spawn') { if (e.kind === 'walker') { e.vx = 0; e.vy = Math.min(e.vy + G, VY_MAX); moveBody(e); } if (--e.st <= 0) e.state = 'active'; return; }
   if (e.state === 'hatch') {
     e.st--;
     if (e.st === 30) fleers.push({ x: e.x + 9 + (e.face > 0 ? -140 : 140), y: e.y - 60, tx: e.x, ty: e.y, tier: e.tier, face: e.face, arrive: true, t: 30 });
@@ -1082,6 +1106,22 @@ function updateEnemy(e) {
     return;
   }
   if (e.bump > 0) e.bump--;
+  if (e.kind === 'walker' && !(P && P.pw.frost > 0)) {
+    if (e.hit > 0) e.hit--;
+    const p = e.plat;
+    if (e.onGround && p) {
+      e.vx = e.dir * e.spd;
+      const nx = e.x + e.vx;
+      if (nx < p.x - 2 || nx + e.w > p.x + p.w + 2) { e.dir *= -1; e.vx = e.dir * e.spd; }
+    } else e.vx *= 0.95;
+    e.face = e.dir;
+    e.vy = Math.min(e.vy + G, VY_MAX);
+    moveBody(e);
+    if (e.hitCeil) shakeStal(e.x + 9);
+    e.anim += 0.18;
+    if (e.y + e.h >= SEA + 2) { splash(e.x + 9); e.dead = true; }
+    return;
+  }
   if (P && P.pw.frost > 0) {
     e.vx *= 0.9; e.vy = Math.min(e.vy * 0.9 + 0.03, 0.6); moveBody(e);
     if (e.y + e.h >= SEA + 2) { splash(e.x + 9); e.dead = true; }
@@ -1114,6 +1154,18 @@ function updateEnemy(e) {
   if (e.y + e.h >= SEA + 2) { splash(e.x + 9); e.dead = true; }
 }
 function defeat(e, how) {
+  if (e.kind === 'walker') {
+    e.dead = true;
+    const wp = WALKER_PAL[THEME];
+    burst(e.x + 9, e.y + 18, 26, wp.eye, 2.6, 40, 1.8); burst(e.x + 9, e.y + 18, 12, wp.s1, 2, 30, 1.6, false, 0.12);
+    let mult = 1;
+    if (!P.onGround && how !== 'crush' && how !== 'zap') { P.combo++; mult = Math.min(P.combo, 5 + UP('combo')); }
+    const pts = e.pts * mult;
+    addScore(pts, e.x + 9, e.y + 6, mult > 1 ? `+${fmt(pts)}  x${mult}` : undefined);
+    addGems(e.spiky ? 2 : 1, e.x + 9, e.y + 6);
+    shake = 4; buzz('light'); SFX.win();
+    return;
+  }
   const pal = PAL_E[e.tier];
   e.dead = true;
   burst(e.x + 9, e.y + 10, 30, pal.plume, 3, 45, 2);
@@ -1142,6 +1194,17 @@ function collisions() {
   if (P.state === 'active') {
     for (const e of enemies) {
       if (e.dead || e.state === 'spawn') continue;
+      if (e.kind === 'walker') {
+        const ddx = wdx(P.x, e.x), pb = P.y + RH, top = e.y + RH - 15;
+        if (Math.abs(ddx) < 19 && pb > top - 3 && P.y < e.y + RH - 2) {
+          const power = P.boostT > 0 || (P.pw.dash > 0 && Math.abs(P.vx) > 2.5) || P.pw.frost > 0 || (P.pw.lance > 0 && !e.spiky);
+          const stomp = P.vy > 0.2 && pb < top + 9;
+          if (power || (stomp && !e.spiky)) { if (stomp) { P.vy = -3.2; P.onGround = false; } defeat(e, 'stomp'); }
+          else if (stomp && e.spiky) { if (P.invuln <= 0) hurtPlayer(e.x + 9); if (P.state === 'active') P.vy = -3; }
+          else if (P.bump <= 0) { P.bump = 20; P.vx = -(Math.sign(ddx) || 1) * 2.5; e.dir = Math.sign(ddx) || e.dir; if (P.invuln <= 0) hurtPlayer(e.x + 9); }
+        }
+        continue;
+      }
       const dx = wdx(P.x, e.x), dy = e.y - P.y;
       if (Math.abs(dx) < 21 && Math.abs(dy) < 26) {
         if (e.state === 'hatch') { defeat(e, 'foot'); continue; }
@@ -1161,7 +1224,7 @@ function collisions() {
   }
   for (let i = 0; i < enemies.length; i++) for (let j = i + 1; j < enemies.length; j++) {
     const a = enemies[i], b = enemies[j];
-    if (a.state !== 'active' || b.state !== 'active' || a.bump || b.bump) continue;
+    if (a.state !== 'active' || b.state !== 'active' || a.bump || b.bump || a.kind || b.kind) continue;
     const dx = wdx(a.x, b.x);
     if (Math.abs(dx) < 20 && Math.abs(a.y - b.y) < 24) {
       const s = Math.sign(dx) || 1; a.vx = -s * 1.6; b.vx = s * 1.6; a.bump = b.bump = 14; a.ai.dir = -s; b.ai.dir = s;
@@ -1800,9 +1863,32 @@ function drawWasp(g, pal, r, crown) {
   drawWing(g, 1, 13, 13, 5, a, 'rgba(230,230,255,.5)', 'rgba(255,255,255,.15)');
 }
 
+function drawWalker(g, r) {
+  const wp = WALKER_PAL[THEME], t = r.anim;
+  g.strokeStyle = wp.s2; g.lineWidth = 1; g.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const lx = -5 + i * 5, sw = Math.sin(t * 2 + i * 2.1) * 1.6;
+    g.beginPath(); g.moveTo(lx, 20); g.lineTo(lx + sw - 1.5, 24); g.stroke();
+    g.beginPath(); g.moveTo(lx + 1, 20); g.lineTo(lx + 1 - sw + 1.5, 24); g.stroke();
+  }
+  const sg = g.createLinearGradient(0, 12, 0, 22); sg.addColorStop(0, '#ffffff'); sg.addColorStop(0.3, wp.s1); sg.addColorStop(1, wp.s2);
+  g.fillStyle = sg; g.beginPath(); g.ellipse(-0.5, 19.5, 9, 5.2, 0, Math.PI, TAU); g.lineTo(8.5, 21); g.lineTo(-9.5, 21); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,.3)'; g.lineWidth = 0.6;
+  g.beginPath(); g.moveTo(-0.5, 14.4); g.lineTo(-0.5, 21); g.moveTo(-6, 16.5); g.quadraticCurveTo(-3, 18, -2, 21); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.ellipse(-2.5, 16.2, 4, 1, -0.2, 0, TAU); g.fill();
+  if (r.spiky) {
+    g.fillStyle = '#f4f4ff'; g.strokeStyle = wp.s2; g.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) { const a = Math.PI + 0.35 + i * 0.6, bx = -0.5 + Math.cos(a) * 8.6, by = 19.5 + Math.sin(a) * 5; g.beginPath(); g.moveTo(bx - 1.4, by + 0.6); g.lineTo(-0.5 + Math.cos(a) * 13, 19.5 + Math.sin(a) * 8.5); g.lineTo(bx + 1.4, by + 0.6); g.closePath(); g.fill(); g.stroke(); }
+  }
+  g.fillStyle = wp.s2; g.beginPath(); g.ellipse(9, 19.6, 3.4, 2.8, 0, 0, TAU); g.fill();
+  glow(g, 10.4, 18.8, 4, r.spiky ? 'rgba(255,70,70,.95)' : wp.eye, 0.9);
+  g.fillStyle = r.spiky ? '#ff5050' : wp.eye; g.beginPath(); g.arc(10.4, 18.8, 1, 0, TAU); g.fill();
+  if (!r.spiky) { g.strokeStyle = wp.s1; g.lineWidth = 1; g.beginPath(); g.moveTo(10.5, 17.2); g.quadraticCurveTo(13, 14.5, 14.6, 15.4); g.stroke(); }
+}
 function drawRiderAt(g, r, cx, y, palOverride, mountId) {
   const isP = r.isPlayer, pal = palOverride || (isP ? playerPal() : PAL_E[r.tier]);
   g.save(); g.translate(cx, y + RH); g.scale(r.face * SPR, SPR); g.translate(0, -RH);
+  if (r.kind === 'walker') { drawWalker(g, r); g.restore(); return; }
   if (r.state === 'hatch') drawKnight(g, pal, false, true, frame * 0.2);
   else {
     glow(g, 0, 13, 16, isP ? 'rgba(90,220,255,.18)' : 'rgba(255,120,80,.10)');
@@ -2578,7 +2664,7 @@ resize();
 goTitle();
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>
