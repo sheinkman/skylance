@@ -476,6 +476,219 @@
       ],
       "style": "toon",
       "prompt": "A mobile game app icon: a cute chunky knight in silver armor with a blue cape and gold plume riding a cyan dragonfly, lance forward, flying in front of a big glowing moon on a deep purple night sky. Rounded square composition, bold and readable, no text."
+    },
+    {
+      "id": "bg_bog",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a gloomy misty swamp at dusk, twisted dead trees with hanging moss, giant lily pads and glowing green fungus, eerie green fog, a murky toxic green swamp water at the bottom."
+    },
+    {
+      "id": "bg_hive",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: inside a giant glowing honey hive, walls of golden hexagonal honeycomb cells glowing warm amber, honey dripping from above, a pool of thick golden honey at the bottom."
+    },
+    {
+      "id": "bg_spirit",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a haunted moonlit night forest, tall dark twisted trees, floating ghostly blue and violet spirit lights, purple mist, a dark misty pond at the bottom. Very dark and moody."
+    },
+    {
+      "id": "bg_cosmic",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: deep outer space with a colorful purple and teal nebula, bright stars, a large ringed planet, floating asteroid fragments in the distance, a glowing cosmic energy sea at the bottom."
+    },
+    {
+      "id": "island_bog",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating platform for a 2D side-view game made of a mossy rotting log and swamp roots: a perfectly flat mossy top with small mushrooms, and an underside of tangled roots and mud tapering down with glowing green fungus. Much wider than tall. Only the platform.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "island_hive",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating platform for a 2D side-view game made of golden honeycomb wax: a perfectly flat top of hexagonal wax cells with a little honey, and an underside of honeycomb tapering down with glowing amber honey drips. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_spirit",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating platform for a 2D side-view game in a haunted forest: a perfectly flat top of dark grass with tiny glowing blue flowers and a small lantern, and an underside of dark earth and roots tapering down with glowing violet spirit crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_cosmic",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating asteroid platform for a 2D side-view game: a perfectly flat top of glowing teal crystal-covered rock, and an underside of dark purple space rock tapering down with glowing magenta and cyan star crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "shore_bog",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of swamp bank for a 2D side-view game ledge: a perfectly flat mossy top, a muddy root-tangled vertical face below. Taller than wide. Only the bank chunk.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "shore_hive",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall pillar of golden honeycomb wax for a 2D side-view game ledge: a perfectly flat top, hexagonal cells on the vertical face with honey drips. Taller than wide. Only the pillar."
+    },
+    {
+      "id": "shore_spirit",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall rectangular block of dark haunted earth for a 2D side-view game ledge, like a cliff pillar: a perfectly flat dark grassy top with tiny glowing blue flowers, straight rugged vertical sides of dark soil and roots going all the way down. Taller than wide, NOT floating, NOT tapering. Only the block.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "shore_cosmic",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of dark purple space rock for a 2D side-view game ledge: a perfectly flat top with glowing teal crystals, a rugged vertical face with glowing seams. Taller than wide. Only the rock chunk."
+    },
+    {
+      "id": "insect_horsefly",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a giant swamp horsefly: huge iridescent green compound eyes, hairy dark grey-green thorax, striped abdomen extending back to the left, thin legs. NO wings at all. Full body.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "insect_bee",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a plump fuzzy bumblebee: round furry yellow and black striped abdomen at the back left, fuzzy thorax, black head with antennae, thin legs. NO wings at all. Full body.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "insect_cicada",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a ghostly spectral cicada: translucent-looking pale blue and violet glowing body, big glowing cyan eyes, segmented abdomen extending back to the left, thin legs. NO wings at all. Full body."
+    },
+    {
+      "id": "insect_butterfly",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The slim body of a cosmic butterfly: a dark slender body sparkling with tiny stars, long curled antennae, glowing violet eyes, thin legs. NO wings at all. Full body."
+    },
+    {
+      "id": "boss_toad",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant toad king boss: a huge warty green and brown swamp toad wearing a small rusty golden crown, glowing yellow eyes, wide mouth, sitting upright facing right. Full body.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "boss_mantis",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant blade mantis boss: an amber and gold armored praying mantis with huge scythe-like front arms raised, glowing orange eyes, opaque golden wings, facing right. Full body.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "boss_spider",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant shadow spider boss: a dark purple and black spider with glowing violet eyes and ghostly violet markings on its abdomen, eight long legs spread. Seen from the front-side. Full body.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
+    },
+    {
+      "id": "boss_eclipse",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant eclipse dragon final boss: a sleek cosmic dragon with dark scales full of stars, glowing gold and violet eclipse-ring patterns, large opaque bat-like wings spread, glowing eyes, facing right. Full body.",
+      "bg": "bright green (#00FF00)",
+      "holes": true
     }
   ]
 }

@@ -25,7 +25,7 @@ def generate(prompt, aspect):
     body = json.dumps({'model': MODEL, 'prompt': prompt + f' Aspect ratio {aspect}.', 'n': 1, 'response_format': 'b64_json'}).encode()
     key = os.environ.get('GEMINI_API_KEY', 'proxy-injected')
     req = urllib.request.Request(API, data=body, headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key})
-    for attempt in range(4):
+    for attempt in range(6):
         try:
             with urllib.request.urlopen(req, timeout=180) as r:
                 d = json.load(r)
@@ -34,7 +34,7 @@ def generate(prompt, aspect):
             return raw
         except Exception as e:
             print(f'  attempt {attempt + 1} failed: {e}')
-            time.sleep(4 * (attempt + 1))
+            time.sleep(15 * (attempt + 1))
     raise SystemExit('generation failed: ' + prompt[:60])
 
 def key_out(img, key=None, holes=False):
