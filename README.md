@@ -15,7 +15,8 @@ An original flap-and-joust arcade game for Android and the web. Ride a dragonfly
 - **Modes**: Endless (cycles through every unlocked realm), Boss Rush and a one-life Gauntlet per realm.
 - **Challenge links**: share a score from the results screen; the link opens the same level for a friend.
 - **Gem packs and free-gem videos**: Google Play Billing with server-side purchase verification, and optional AdMob rewarded videos (+40 gems, 5 a day). A one-time neutral age question keeps ads child-safe for players under 13. See [MONETIZATION.md](MONETIZATION.md) for the account setup.
-- **Referral rewards**: inviting a friend through a link gives both players gems and the exclusive Founder trail. The app reads the Google Play install referrer, and the backend records each referral.
+- **Cloud save**: in the Android app the server keeps each player's progress, gems and items under an anonymous player ID. A transfer code (Cloud save screen) moves an account to a new phone. No name or email is ever collected.
+- **Referral rewards**: inviting a friend through a link gives the friend gems and the exclusive Founder trail at once, and the inviter once the friend clears 5 levels. The app reads the Google Play install referrer, and the backend records each referral.
 
 ## Controls
 

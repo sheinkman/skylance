@@ -42,8 +42,8 @@ td:first-child{font-weight:700}
   <svg class="stars" id="stars" aria-hidden="true"></svg>
   <div class="wrap">
     <h1>Skylance privacy policy</h1>
-    <p>Skylance asks for no name, email, photo, contacts or location. This page lists the little data the game does use, why, and how long it is kept.</p>
-    <p class="date">Effective 25 November 2026. Applies to the Skylance app for Android (com.skylance.game) and the web version.</p>
+    <p>Skylance asks for no name, email, photo, contacts or location. Each game is known to our server only by a random player code. This page lists the data the game uses, why, and how long it is kept.</p>
+    <p class="date">Effective 25 November 2026, updated the same day for cloud saves. Applies to the Skylance app for Android (com.skylance.game) and the web version.</p>
   </div>
 </header>
 
@@ -55,9 +55,13 @@ td:first-child{font-weight:700}
 <table class="stack">
   <thead><tr><th>Data</th><th>Why</th><th>Stored</th><th>Kept</th></tr></thead>
   <tbody>
-    <tr><td>Game progress (levels, stars, gems, items, settings)</td><td data-l="Why">So you can keep playing</td><td data-l="Stored">Only on your device</td><td data-l="Kept">Until you uninstall or clear app data</td></tr>
-    <tr><td>Age group (under 13, 13 to 15, or 16 and over)</td><td data-l="Why">To show only child-safe ads to children and ask for consent where required</td><td data-l="Stored">Only on your device. Your birth year is not kept</td><td data-l="Kept">Until you uninstall</td></tr>
-    <tr><td>Random player code and secret</td><td data-l="Why">Friend invites and checking purchases</td><td data-l="Stored">Our server (Supabase, EU)</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Game progress (levels, stars, medals, best scores), gems and items</td><td data-l="Why">So you can keep playing, restore progress on a new phone, and so purchased gems are never lost</td><td data-l="Stored">On your device and on our server (Supabase, EU), linked only to your random player code</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Gem history (each gem earned, spent or bought)</td><td data-l="Why">To keep the gem balance correct and stop cheating</td><td data-l="Stored">Our server</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Age group (under 13, 13 to 15, or 16 and over)</td><td data-l="Why">To show only child-safe ads to children and ask for consent where required</td><td data-l="Stored">On your device and our server. Your birth year is not kept</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Random player code and secret</td><td data-l="Why">To recognise your game on our server. It is not linked to your name or account</td><td data-l="Stored">On your device and our server</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Activity: first and last day played, number of sessions, levels played, app version, and country (worked out from the network, not GPS)</td><td data-l="Why">To see how many people play and where the game is too hard</td><td data-l="Stored">Our server</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Scrambled device ID (one-way hash), players 13 and over only</td><td data-l="Why">To allow one invite welcome bonus per phone. Never collected from children</td><td data-l="Stored">Our server</td><td data-l="Kept">Until you ask us to delete it</td></tr>
+    <tr><td>Transfer code (only if you request one)</td><td data-l="Why">To move your progress to a new phone</td><td data-l="Stored">Our server stores only a one-way hash; it works once</td><td data-l="Kept">Until used or replaced</td></tr>
     <tr><td>Invite records (which player code invited which)</td><td data-l="Why">To give invite rewards once</td><td data-l="Stored">Our server</td><td data-l="Kept">Until you ask us to delete it</td></tr>
     <tr><td>Purchase records (product, Google order ID, purchase token, date)</td><td data-l="Why">To confirm with Google that a gem pack was paid for, and deliver it once</td><td data-l="Stored">Our server</td><td data-l="Kept">As long as needed for refunds and tax records</td></tr>
     <tr><td>Scrambled network address (a one-way hash of your IP address)</td><td data-l="Why">To stop abuse, such as fake invites</td><td data-l="Stored">Our server. The address itself is never stored</td><td data-l="Kept">Deleted after 2 days</td></tr>
@@ -80,15 +84,15 @@ td:first-child{font-weight:700}
 <p>An invite or challenge link contains your random player code and, for challenges, a level and score. When someone installs the game from your link, Google Play passes that code to the app so both players get their reward. Links contain nothing that identifies you personally.</p>
 
 <h2>Children</h2>
-<p>Skylance is made for everyone, including children. On first launch the app asks for a year of birth and keeps only the age group. For children under 13, the app shows only child-directed, non-personalised ads and collects nothing beyond the table above. We do not knowingly collect personal information from children. A parent who believes their child's data should be removed can contact us as described below.</p>
+<p>Skylance is made for everyone, including children. On first launch the app asks for a year of birth and keeps only the age group. For children under 13, the app shows only child-directed, non-personalised ads, never reads a device ID, and collects nothing beyond the table above. We do not knowingly collect personal information from children. A parent who believes their child's data should be removed can contact us as described below.</p>
 
 <h2>Sharing</h2>
 <p>We do not sell data. Data is shared only with the services that run the game: Cloudflare (runs our backend, which receives the game's requests; it uses your network address only to make the one-way hash described above and does not store it), Supabase (our database host, servers in Frankfurt, Germany), Google Play (installs, purchases and invite codes) and Google AdMob (ads, as described above).</p>
 
 <h2>Your choices and deleting data</h2>
 <ul>
-  <li>Uninstalling the app deletes everything stored on your device.</li>
-  <li>To delete the records on our server, send us your player code (the last six characters of any invite link you shared). We will delete them within 30 days. Purchase records needed for refunds or tax law are kept only as long as the law requires.</li>
+  <li>Uninstalling the app deletes everything stored on your device. Your progress stays on our server so it can be restored with a transfer code.</li>
+  <li>To delete the records on our server, send us your player ID, shown on the Cloud save screen in the app. We will delete them within 30 days. Purchase records needed for refunds or tax law are kept only as long as the law requires.</li>
   <li>You can change ad consent at any time by reinstalling the app, and reset your advertising ID in your phone's settings.</li>
 </ul>
 

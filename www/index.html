@@ -106,6 +106,11 @@
   .card{position:relative}
   #cards.gemgrid canvas{aspect-ratio:2/1}
   #cards.gemgrid p{min-height:0}
+  .acct{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:min(820px,100%);padding:0 4px;box-sizing:border-box}
+  .acct-card{align-items:stretch;padding:14px 16px;gap:8px}
+  .acct-card .tag{text-align:left;font-size:12px}
+  .acct-code{font:800 22px/1.2 ui-monospace,monospace;letter-spacing:2px;text-align:center;color:#ffe28a;padding:8px;border:1px dashed rgba(255,215,106,.5);border-radius:10px;user-select:text;-webkit-user-select:text}
+  #acct-input{font:700 18px ui-monospace,monospace;letter-spacing:2px;text-align:center;padding:10px;border-radius:12px;background:#151a3e;color:#fff;border:1px solid var(--edge);text-transform:uppercase;user-select:text;-webkit-user-select:text}
   .shop-note{grid-column:1/-1;margin:2px 0 0;color:var(--muted);font-size:11px;text-align:center}
   .card p{margin:0;color:var(--muted);font-size:11px;min-height:2.4em}
   .card .ui-btn{min-width:0;padding:7px 8px;font-size:12px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -167,7 +172,7 @@
 </div>
 
 <section id="s-title" class="screen">
-  <div class="topbar"><button class="ui-btn small" id="b-sound">Sound: On</button><button class="ui-btn small primary" id="b-invite">Invite friends: +200 gems</button><span class="gems"><span class="gem"></span><span id="g-title">0</span></span></div>
+  <div class="topbar"><button class="ui-btn small" id="b-sound">Sound: On</button><button class="ui-btn small" id="b-account" hidden>Cloud save</button><button class="ui-btn small primary" id="b-invite">Invite friends: +200 gems</button><span class="gems"><span class="gem"></span><span id="g-title">0</span></span></div>
   <h1 class="logo"><span id="logo-text">SKYLANCE</span><img id="logo-img" src="assets/logo.png" alt="SKYLANCE" hidden onload="this.hidden=false;document.getElementById('logo-text').hidden=true"></h1>
   <p class="tag">Ride the skies. Strike from above. Claim every realm.</p>
   <div class="row">
@@ -203,6 +208,29 @@
 <section id="s-arena" class="screen dim" hidden>
   <div class="topbar"><button class="ui-btn small" id="b-arena-back">Back</button><h2>Arena</h2><span class="gems"><span class="gem"></span><span id="g-arena">0</span></span></div>
   <div class="cards arena-cards" id="arena-cards"></div>
+</section>
+
+<section id="s-account" class="screen dim" hidden>
+  <div class="topbar"><button class="ui-btn small" id="b-account-back">Back</button><h2>Cloud save</h2><span class="gems"><span class="gem"></span><span id="g-account">0</span></span></div>
+  <div class="acct">
+    <div class="panel acct-card">
+      <b>Your progress</b>
+      <p class="tag" id="acct-status"></p>
+      <p class="hint" id="acct-id"></p>
+    </div>
+    <div class="panel acct-card">
+      <b>Move to a new phone</b>
+      <p class="tag">Get a transfer code, then enter it on the new phone. It works once. Getting a new code cancels the old one.</p>
+      <div class="acct-code" id="acct-code" hidden></div>
+      <button class="ui-btn primary" id="b-transfer">Get transfer code</button>
+    </div>
+    <div class="panel acct-card">
+      <b>Restore progress</b>
+      <p class="tag">Enter the code from your old phone. This replaces the progress on this phone.</p>
+      <input id="acct-input" maxlength="16" placeholder="XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Transfer code">
+      <button class="ui-btn" id="b-restore">Restore</button>
+    </div>
+  </div>
 </section>
 
 <section id="s-age" class="screen dim" hidden>
@@ -642,12 +670,14 @@ function loadSave(d) {
   for (const k of ['reg', 'refDone', 'refChecked']) save[k] = d[k] === true;
   if (['child', 'teen', 'adult'].includes(d.ageGroup)) save.ageGroup = d.ageGroup;
   if (d.vids && typeof d.vids === 'object' && /^\d{4}-\d\d-\d\d$/.test(d.vids.day)) save.vids = { day: d.vids.day, n: num(d.vids.n, VIDEOS_PER_DAY_MAX) };
+  save.pending = Array.isArray(d.pending) ? d.pending.filter(e => e && /^[A-Za-z0-9-]{8,40}$/.test(e.id) && ['level', 'run', 'video'].includes(e.t)).map(e => ({ id: e.id, t: e.t, g: num(e.g, 3000) })).slice(-100) : [];
+  save.srvImported = d.srvImported === true; save.hasTransfer = d.hasTransfer === true;
   save.applied = Array.isArray(d.applied) ? d.applied.filter(x => typeof x === 'string' && /^[0-9a-f]{16}$/.test(x)).slice(-40) : [];
 }
 const SAVE_KEY = 'skylance.save.v1';
 const DEF_OWNED = { mount: ['dragonfly'], trail: ['azure'], armor: ['silver'], weapon: ['darts'] }, DEF_EQ = { mount: 'dragonfly', trail: 'azure', armor: 'silver', weapon: 'darts' };
 const VIDEOS_PER_DAY_MAX = 50;
-const save = { applied: [], gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, best2: {}, muted: false };
+const save = { applied: [], pending: [], gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, best2: {}, muted: false };
 try {
   const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
   if (d && typeof d === 'object') loadSave(d);
@@ -3338,9 +3368,9 @@ function render() {
 // ====================================================================
 //  MENUS
 // ====================================================================
-const SCREENS = ['s-age', 's-title', 's-map', 's-shop', 's-arena', 's-challenge', 's-result', 's-pause'];
+const SCREENS = ['s-account', 's-age', 's-title', 's-map', 's-shop', 's-arena', 's-challenge', 's-result', 's-pause'];
 function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; syncTouchUI(); refreshGems(); }
-function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop', 'g-arena']) $(id).textContent = fmt(save.gems); }
+function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop', 'g-arena', 'g-account']) $(id).textContent = fmt(save.gems); }
 function toggleSound() { save.muted = !save.muted; persist(); $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On'); }
 // ---------- challenge links ----------
 const WEB_URL = 'https://claude.ai/artifact/AnRuoyur9MGeiSHP7RKicm';
@@ -3396,7 +3426,9 @@ async function apiCall(path, body, timeout = 8000) {
 async function api(path, body) { const r = await apiCall(path, body); return r && r.status === 200 ? r.data : null; }
 async function loadConfig() {
   const c = await api('/v1/config');
-  if (!c) return;
+  if (c) applyConfig(c);
+}
+function applyConfig(c) {
   CFG.videoGems = clampInt(c.videoGems, 1, 500, CFG.videoGems);
   CFG.videosPerDay = clampInt(c.videosPerDay, 0, 20, CFG.videosPerDay);
   CFG.inviterGems = clampInt(c.inviterGems, 0, 2000, CFG.inviterGems);
@@ -3407,38 +3439,169 @@ const newPlayer = () => Date.now() - save.firstSeen < 20 * 3600e3;
 function noteInviter(code) {
   if (code && /^[a-z0-9]{6}$/.test(code) && code !== save.refCode && !save.invitedBy && !save.refDone && newPlayer()) { save.invitedBy = code; persist(); refSync(); }
 }
-function grantFounder() { if (!save.owned.trail.includes('founder')) save.owned.trail.push('founder'); }
+// ---------- player account on the server (Android app only; the web demo stays local) ----------
+const SERVER = IS_APP;
+const APP_VERSION = '1.1';
+const randCode = () => { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; return Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); };
+const newUuid = () => crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16));
+const pendingGems = () => save.pending.reduce((a, e) => a + e.g, 0);
+const NET = { lastSync: 0, online: false };
+const cred = () => ({ code: save.refCode, secret: save.refSecret });
+function progressPayload() { return { stars: save.stars, hstars: save.hstars, ch: save.ch, best2: save.best2, best: Math.floor(save.best) }; }
+
+// Takes what the server says this player has. Server values win for gems and items; progress keeps the best of both.
+function applyProfile(p, replace) {
+  if (!p || typeof p !== 'object') return;
+  const cats = { mount: MOUNTS, trail: TRAILS, armor: ARMORS, weapon: WEAPONS }, o = p.owned && typeof p.owned === 'object' ? p.owned : {};
+  for (const k of Object.keys(cats)) {
+    const list = Array.isArray(o[k]) ? o[k].filter(id => typeof id === 'string' && Object.hasOwn(cats[k], id)) : [];
+    save.owned[k] = [...new Set([...DEF_OWNED[k], ...list])];
+    if (!save.owned[k].includes(save.eq[k])) save.eq[k] = DEF_EQ[k];
+  }
+  const lv = (m, kind) => { const r = Object.create(null); if (m && typeof m === 'object') for (const k of Object.keys(m)) if (/^[a-z]{1,16}$/.test(k)) r[k] = clampInt(m[k], 0, kind === 'w' ? 3 : 10, 0); return r; };
+  save.wlv = lv(o.wlv, 'w'); save.up = lv(o.up, 'u');
+  const pr = p.progress && typeof p.progress === 'object' ? p.progress : {};
+  if (replace) { save.stars = Object.create(null); save.hstars = Object.create(null); save.ch = Object.create(null); save.best2 = Object.create(null); save.best = 0; }
+  const key = /^\d{1,2}-\d{1,2}$/;
+  for (const [m, max] of [['stars', 3], ['hstars', 3], ['ch', 7]]) if (pr[m] && typeof pr[m] === 'object')
+    for (const k of Object.keys(pr[m])) if (key.test(k)) { const v = clampInt(pr[m][k], 0, max, 0); save[m][k] = m === 'ch' ? ((save[m][k] || 0) | v) : Math.max(save[m][k] || 0, v); }
+  if (pr.best2 && typeof pr.best2 === 'object') for (const k of Object.keys(pr.best2)) if (/^(rush|g\d{1,2})$/.test(k) && pr.best2[k]) {
+    const a = save.best2[k] || { score: 0, cleared: 0 };
+    save.best2[k] = { score: Math.max(a.score, clampInt(pr.best2[k].score, 0, 1e10, 0)), cleared: Math.max(a.cleared, clampInt(pr.best2[k].cleared, 0, 100, 0)) };
+  }
+  save.best = Math.max(save.best, clampInt(pr.best, 0, 1e10, 0));
+  save.gems = clampInt(p.gems, 0, 1e9, 0) + pendingGems();
+  save.hasTransfer = p.hasTransfer === true;
+  persist(); refreshGems();
+  if (!$('s-shop').hidden) openShop();
+  if (!$('s-account').hidden) renderAccount();
+}
+async function deviceHash() {
+  if (save.ageGroup !== 'teen' && save.ageGroup !== 'adult') return null; // never for children
+  try { const r = await plug('InstallReferrer').deviceId(); if (!r || !r.id) return null;
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('skylance-device:' + r.id));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); } catch (e) { return null; }
+}
+async function startSession() {
+  for (let i = 0; i < 3; i++) {
+    const r = await api('/v1/session', { ...cred(), version: APP_VERSION, age: save.ageGroup || '', device: await deviceHash() });
+    if (!r) return false;
+    if (r.ok === true) {
+      save.reg = true; NET.online = true;
+      if (r.config) applyConfig(r.config);
+      // First time on the server: bring along what this phone already had (once, capped by the server).
+      if (!save.srvImported && (save.gems > 0 || Object.keys(save.stars).length)) {
+        const im = await api('/v1/import', { ...cred(), gems: Math.floor(save.gems - pendingGems()),
+          owned: { mount: save.owned.mount, trail: save.owned.trail, armor: save.owned.armor, weapon: save.owned.weapon, wlv: save.wlv, up: save.up }, progress: progressPayload() });
+        if (im && im.ok === true) { save.srvImported = true; applyProfile(im.profile); return true; }
+      }
+      save.srvImported = true; applyProfile(r.profile);
+      return true;
+    }
+    if (r.error === 'code_taken') { save.refCode = randCode(); save.reg = false; persist(); continue; }
+    return false;
+  }
+  return false;
+}
+// Sends progress and queued gem earnings; the server applies each once, with its limits.
+async function syncNow() {
+  if (!SERVER || !save.reg) return false;
+  const batch = save.pending.slice(0, 50);
+  const r = await api('/v1/sync', { ...cred(), progress: progressPayload(), events: batch });
+  if (!r || r.ok !== true) { NET.online = !!r; return false; }
+  const sent = new Set(batch.map(e => e.id));
+  save.pending = save.pending.filter(e => !sent.has(e.id));
+  NET.online = true; NET.lastSync = Date.now();
+  applyProfile(r.profile);
+  if (save.pending.length) setTimeout(() => refSync(), 500);
+  return true;
+}
+// Records gems earned in play. In the app the server confirms them; the web demo keeps them locally.
+function earn(t, g) {
+  g = clampInt(g, 0, 3000, 0);
+  if (!SERVER) { save.gems += g; persist(); return; }
+  if (save.pending.length >= 100) save.pending.shift();
+  save.pending.push({ id: newUuid(), t, g });
+  save.gems += g;
+  persist(); refreshGems();
+  clearTimeout(earn.tm); earn.tm = setTimeout(() => refSync(), 800);
+}
+// Buys at the server's price in the app (needs internet); locally in the web demo.
+async function buyItem(kind, id, cost, after) {
+  if (!SERVER) { if (save.gems < cost) return; save.gems -= cost; localBuy(kind, id); after && after(); persist(); SFX.up(); buzz('medium'); openShop(); return; }
+  if (MON.buying) return; MON.buying = true;
+  try {
+    if (!save.reg || save.pending.length) await refSync();
+    const r = await api('/v1/buy', { ...cred(), kind, id });
+    if (!r) { toast('Connect to the internet to buy items.'); return; }
+    if (r.ok === true) { applyProfile(r.profile); after && after(); persist(); SFX.up(); buzz('medium'); openShop(); }
+    else if (r.error === 'not_enough') { applyProfile(r.profile); toast('Not enough gems yet.'); }
+    else toast('That could not be bought right now.');
+  } finally { MON.buying = false; }
+}
+function localBuy(kind, id) {
+  if (kind === 'wup') save.wlv[id] = (save.wlv[id] || 0) + 1;
+  else if (kind === 'up') save.up[id] = (save.up[id] || 0) + 1;
+  else if (!save.owned[kind].includes(id)) save.owned[kind].push(id);
+}
+function renderAccount() {
+  const ago = NET.lastSync ? Math.max(0, Math.round((Date.now() - NET.lastSync) / 60000)) : -1;
+  $('acct-status').textContent = !save.reg ? 'Not saved online yet. Connect to the internet and it saves automatically.'
+    : save.pending.length ? 'Saving… some progress is waiting for an internet connection.'
+    : ago < 0 ? 'Saved online.' : `Saved online${ago < 1 ? ' just now' : ` ${ago} min ago`}. Gems and items are kept on the server.`;
+  $('acct-id').textContent = `Player ID: ${save.refCode}`;
+  refreshGems();
+}
+function openAccount() { renderAccount(); $('acct-code').hidden = true; $('acct-input').value = ''; show('s-account'); refSync().then(renderAccount); }
+async function getTransferCode() {
+  const b = $('b-transfer'); b.disabled = true;
+  try {
+    if (!save.reg) await refSync();
+    const r = save.reg ? await api('/v1/transfer/create', cred()) : null;
+    if (!r || r.ok !== true || !/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(r.transfer || '')) { toast('Connect to the internet to get a transfer code.'); return; }
+    const el = $('acct-code'); el.textContent = r.transfer; el.hidden = false;
+    b.textContent = 'Get a new code';
+    toast('Write this code down or take a screenshot.');
+  } finally { b.disabled = false; }
+}
+async function restoreFromCode() {
+  const raw = $('acct-input').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (raw.length !== 12) { toast('The code has 12 letters and numbers.'); return; }
+  const b = $('b-restore'); b.disabled = true;
+  try {
+    const secret = newUuid();
+    const r = await api('/v1/transfer/redeem', { transfer: raw, secret });
+    if (!r) { toast('Connect to the internet to restore.'); return; }
+    if (r.ok !== true || !/^[a-z0-9]{6}$/.test(r.code || '')) { toast(r.error === 'rate' ? 'Too many tries. Wait an hour and try again.' : 'That code did not work. Check it and try again.'); return; }
+    save.refCode = r.code; save.refSecret = secret; save.reg = true; save.srvImported = true; save.pending = [];
+    save.invitedBy = undefined; save.refDone = true;
+    applyProfile(r.profile, true);
+    SFX.win(); buzz('heavy'); toast('Progress restored!');
+    renderAccount();
+  } finally { b.disabled = false; }
+}
 let refPromise = null;
 function refSync() { return refPromise || (refPromise = refSyncRun().finally(() => { refPromise = null; })); }
 async function refSyncRun() {
-  {
+  if (!SERVER || needAgeCheck()) return;
   try {
-    if (!save.reg) {
-      for (let i = 0; i < 3 && !save.reg; i++) {
-        const r = await api('/v1/register', { code: save.refCode, secret: save.refSecret });
-        if (!r) return;
-        if (r.ok === true) { save.reg = true; persist(); }
-        else { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); persist(); }
-      }
-      if (!save.reg) return;
-    }
+    if (!save.reg || Date.now() - NET.lastSync > 10 * 60e3) { if (!(await startSession())) return; }
     if (save.invitedBy && !save.refDone) {
-      const r = await api('/v1/invite/claim', { code: save.refCode, secret: save.refSecret, inviter: save.invitedBy });
+      const r = await api('/v1/invite/claim', { ...cred(), inviter: save.invitedBy });
       if (r) {
-        save.refDone = true;
-        if (r.ok === true) { const g = clampInt(r.gems, 0, 2000, 0); save.gems += g; grantFounder(); toast(`Friend bonus: +${fmt(g)} gems and the Founder trail!`); SFX.up(); refreshGems(); }
-        persist();
+        save.refDone = true; persist();
+        if (r.ok === true) { applyProfile(r.profile); toast(`Friend bonus: +${fmt(clampInt(r.gems, 0, 2000, 0))} gems and the Founder trail!`); SFX.up(); }
       }
     }
-    const c = await api('/v1/invite/collect', { code: save.refCode, secret: save.refSecret });
+    const c = await api('/v1/invite/collect', cred());
     const n = c ? clampInt(c.count, 0, 50, 0) : 0;
+    if (c && c.profile) applyProfile(c.profile);
     if (n > 0) {
-      const g = clampInt(c.gems, 0, 100000, 0);
-      save.gems += g; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
-      toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(g)} gems`); SFX.up(); buzz('medium');
+      save.refCount = (save.refCount || 0) + n; persist();
+      toast(`${n === 1 ? 'A friend' : n + ' friends'} you invited cleared 5 levels! +${fmt(clampInt(c.gems, 0, 100000, 0))} gems`); SFX.up(); buzz('medium');
     }
+    await syncNow();
   } catch (e) { }
-  }
 }
 async function checkInstallReferrer() {
   if (!IS_APP || save.refChecked) return;
@@ -3525,7 +3688,7 @@ async function watchVideo() {
     const r = await A.showRewardVideoAd();
     if (r) {
       if (!save.vids || save.vids.day !== today()) save.vids = { day: today(), n: 0 };
-      save.vids.n++; save.gems += CFG.videoGems; persist(); refreshGems();
+      save.vids.n++; earn('video', CFG.videoGems);
       SFX.up(); buzz('medium'); toast(`+${CFG.videoGems} gems. Thanks for watching!`);
     }
   } catch (e) { toast('The video could not play. Try again in a minute.'); }
@@ -3545,8 +3708,9 @@ async function verifyPurchase(p) {
   } catch (e) { toast('Could not reach the server. Your purchase is safe and will finish next time.'); return; }
   if (res && res.ok === true) {
     const gems = Math.min(50000, Math.floor(+res.gems) || 0), d = await digest(p.token);
+    applyProfile(res.profile);
     if (!save.applied.includes(d)) {
-      save.applied = [...save.applied, d].slice(-40); save.gems += gems; persist(); refreshGems();
+      save.applied = [...save.applied, d].slice(-40); persist();
       SFX.win(); buzz('heavy'); toast(`+${fmt(gems)} gems added. Thank you!`);
     }
     try { await B.consume({ token: p.token }); } catch (e) { }
@@ -3723,7 +3887,7 @@ function openShop(tab) {
     else {
       btn.innerHTML = `<span class="gem"></span> ${fmt(it.price)}`;
       if (save.gems < it.price) { btn.disabled = true; btn.title = `Need ${fmt(it.price - save.gems)} more gems`; }
-      else btn.onclick = () => { save.gems -= it.price; save.owned[shopTab].push(id); save.eq[shopTab] = id; persist(); SFX.up(); buzz('medium'); openShop(); };
+      else { const kind = shopTab; btn.onclick = () => buyItem(kind, id, it.price, () => { save.eq[kind] = id; }); }
     }
     card.appendChild(btn); box.appendChild(card);
   }
@@ -3756,10 +3920,10 @@ function renderWeapons(box) {
     const mkb = (html, cls, fn, dis, title) => { const b = document.createElement('button'); b.className = 'ui-btn ' + cls; b.innerHTML = html; if (title) b.title = title; if (dis) b.disabled = true; else if (fn) b.onclick = fn; row.appendChild(b); };
     if (!owned) {
       row.style.gridTemplateColumns = '1fr';
-      mkb(`<span class="gem"></span> ${fmt(w.price)}`, save.gems >= w.price ? 'primary' : '', () => { save.gems -= w.price; save.owned.weapon.push(id); save.eq.weapon = id; persist(); SFX.up(); buzz('medium'); openShop(); }, save.gems < w.price);
+      mkb(`<span class="gem"></span> ${fmt(w.price)}`, save.gems >= w.price ? 'primary' : '', () => buyItem('weapon', id, w.price, () => { save.eq.weapon = id; }), save.gems < w.price);
     } else {
       mkb(eq ? 'Equipped' : 'Equip', '', () => { save.eq.weapon = id; persist(); SFX.power(); openShop(); }, eq);
-      if (lv < 3) { const c = w.up[lv]; mkb(`&#9650; <span class="gem"></span> ${fmt(c)}`, save.gems >= c ? 'primary' : '', () => { save.gems -= c; save.wlv[id] = lv + 1; persist(); SFX.up(); buzz('medium'); openShop(); }, save.gems < c, `Upgrade to level ${lv + 1}`); }
+      if (lv < 3) { const c = w.up[lv]; mkb(`&#9650; <span class="gem"></span> ${fmt(c)}`, save.gems >= c ? 'primary' : '', () => buyItem('wup', id, c), save.gems < c, `Upgrade to level ${lv + 1}`); }
       else mkb('Maxed', '', null, true);
     }
     card.appendChild(row); box.appendChild(card);
@@ -3778,7 +3942,7 @@ function renderUpgrades(box) {
       const c = u.cost[lv];
       btn.innerHTML = `<span class="gem"></span> ${fmt(c)}`;
       if (save.gems < c) { btn.disabled = true; btn.title = `Need ${fmt(c - save.gems)} more gems`; }
-      else { btn.classList.add('primary'); btn.onclick = () => { save.gems -= c; save.up[id] = lv + 1; persist(); SFX.up(); buzz('medium'); openShop(); }; }
+      else { btn.classList.add('primary'); btn.onclick = () => buyItem('up', id, c); }
     }
     card.appendChild(btn); box.appendChild(card);
   }
@@ -3801,7 +3965,7 @@ function finishLevel(win) {
   }
   const earned = Math.round(((runGems + (win ? 5 : 0) + stars * 10) * (hard ? 2 : 1) + chGems) * (1 + 0.1 * UP('gems')));
   if (win) { const tbl = hard ? save.hstars : save.stars; tbl[key] = Math.max(tbl[key] || 0, stars); }
-  save.gems += earned; save.best = Math.max(save.best, score); runGems = 0; persist();
+  earn('level', earned); save.best = Math.max(save.best, score); runGems = 0; persist();
   $('r-title').textContent = win ? (l === 10 ? (hard ? 'Nightmare Conquered!' : 'Realm Conquered!') : (hard ? 'Nightmare Cleared' : 'Level Complete')) : 'Out of Lives';
   const sEls = $('r-stars').children;
   for (let i = 0; i < 3; i++) sEls[i].className = '';
@@ -3858,7 +4022,7 @@ function finishRun(win) {
   const newBest = score > prev.score || cleared > prev.cleared;
   save.best2[key] = { score: Math.max(prev.score, score), cleared: Math.max(prev.cleared, cleared) };
   const earned = Math.round((runGems + cleared * (isRush ? 20 : 10) + (win ? (isRush ? 150 : 100) : 0) + Math.floor(score / 2000)) * (1 + 0.1 * UP('gems')));
-  save.gems += earned; save.best = Math.max(save.best, score); runGems = 0; persist();
+  earn('run', earned); save.best = Math.max(save.best, score); runGems = 0; persist();
   $('r-title').textContent = win ? (isRush ? 'Boss Rush Complete!' : 'Gauntlet Conquered!') : (newBest ? 'New Best!' : 'Run Over');
   $('r-stars').hidden = true; $('r-ch').innerHTML = '';
   $('r-crit').textContent = `${isRush ? 'Bosses' : 'Levels'} cleared: ${cleared} / ${total}`;
@@ -3871,7 +4035,7 @@ function finishEndless() {
   game.state = 'result';
   const earned = Math.round((runGems + Math.floor(score / 2000)) * (1 + 0.1 * UP('gems')));
   const newBest = score > save.best;
-  save.gems += earned; save.best = Math.max(save.best, score); runGems = 0; persist();
+  earn('run', earned); save.best = Math.max(save.best, score); runGems = 0; persist();
   $('r-title').textContent = newBest ? 'New Best!' : 'Game Over';
   $('r-stars').hidden = true;
   $('r-crit').textContent = `Reached wave ${wave}`;
@@ -3921,6 +4085,12 @@ if (!checkChallengeLink(location.hash)) {
 }
 addEventListener('hashchange', () => checkChallengeLink(location.hash));
 $('b-invite').onclick = () => { SFX.power(); shareInvite(); };
+$('b-account').hidden = !SERVER;
+$('b-account').onclick = () => { SFX.power(); openAccount(); };
+$('b-account-back').onclick = goTitle;
+$('b-transfer').onclick = getTransferCode;
+$('b-restore').onclick = restoreFromCode;
+setInterval(() => { if (SERVER && save.pending.length && !document.hidden) refSync(); }, 60000);
 loadConfig();
 checkInstallReferrer().finally(refSync);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refSync(); });
@@ -3928,7 +4098,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refS
   if (AppP && AppP.addListener) AppP.addListener('appUrlOpen', e => { if (game.state !== 'play') checkChallengeLink(e.url); }); }
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, refSync, MON, renderGems, verifyPurchase, openAgeCheck, shareInvite, noteInviter, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, refSync, earn, buyItem, applyProfile, openAccount, NET, MON, renderGems, verifyPurchase, openAgeCheck, shareInvite, noteInviter, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>

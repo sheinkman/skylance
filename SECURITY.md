@@ -29,6 +29,9 @@ Game  ->  Skylance backend (Cloudflare Worker, skylance-api.skylance.workers.dev
 - Tables have row-level security on, no policies, and no table grants: nobody can read or change them through the API.
 - Game settings (video reward, daily video limit, invite rewards) come from the backend's `/v1/config`, so they can change without an app update. The game clamps them to safe ranges.
 - A scheduled trigger on the backend calls the database every 2 days so the free Supabase project never pauses.
+- **The server holds each player's gems and items** (Android app). Every earning goes into a ledger once (unique per player and event) with caps: 1,000 gems per level result, 3,000 per Arena or Endless run, 8,000 an hour and 30,000 a day from play, and the daily video limit counted on the server. Every purchase in the Hangar is charged at the server's own price list. Gems or items edited on the phone are overwritten by the server's values on the next sync.
+- **Transfer codes** are 12 random characters, stored only as a SHA-256 hash, single use, and limited to 10 tries per network per hour. Redeeming one gives the account a new secret, so the old phone loses access.
+- **Invites:** the inviter is paid only after the friend clears 5 levels; one welcome bonus per phone (a hashed device ID, read only for players 13 and over).
 - Rate limits:
   - at most 30 new players per network per hour
   - at most 5 accepted referrals per network per day
@@ -42,6 +45,6 @@ Game  ->  Skylance backend (Cloudflare Worker, skylance-api.skylance.workers.dev
 
 1. Never put a secret key in `www/index.html` or the Android project. Anything shipped in the app can be read by anyone.
 2. Never commit the release signing key (`*.jks`, `*.keystore`). Store it and its passwords in a safe place with a backup: losing it means you cannot update the game on Google Play. Enrolling in Play App Signing lets Google keep the app signing key.
-3. Gems and progress live on the device, so players can edit them; that only affects their own game. Purchased gems are granted only after the `verify-purchase` server function has confirmed the purchase with Google, so tools that fake purchase responses get nothing. Keep it that way: never grant paid gems from the device's word alone.
+3. In the Android app, gems and items live on the server; the phone's copy is only for display and offline play. In the web demo they stay local. Purchased gems are granted only after the `verify-purchase` server function has confirmed the purchase with Google, so tools that fake purchase responses get nothing. Keep it that way: never grant paid gems from the device's word alone.
 4. When adding UI that shows outside data, use `textContent`, not `innerHTML`.
 5. Before each release, run `npm audit` and the Supabase security advisor. The advisor lists the 4 `api_*` functions as publicly callable; that is expected, since they refuse every call without the backend key.

@@ -200,3 +200,18 @@ revoke all on function public.api_register(text, text, text, uuid), public.api_c
   public.api_collect(text, text, uuid), public.api_ping(text) from public;
 grant execute on function public.api_register(text, text, text, uuid), public.api_claim(text, text, text, uuid, text),
   public.api_collect(text, text, uuid), public.api_ping(text) to anon, authenticated;
+
+-- =====================================================================
+-- Server-side players (migration "server_players", 25 Nov 2026).
+-- Adds to players: last_seen, sessions, app_version, country, age_group, device_hash (13+ only),
+--   gems (server balance), owned (items and upgrade levels), progress (stars, medals, best scores),
+--   levels_played, levels_cleared, best_level, transfer_hash, imported.
+-- New table public.ledger: every gem movement, unique per (player, ref), so nothing is applied twice.
+-- New table private.catalog: shop prices the server enforces (must match www/index.html).
+-- New backend-only functions: api_session, api_import, api_sync, api_buy, api_claim (6 args),
+--   api_collect (4 args), api_transfer_create, api_transfer_redeem; record_purchase now credits the wallet.
+-- Rules: level result <= 1000 gems, run <= 3000, play earnings <= 8000/hour and 30000/day,
+--   videos counted per UTC day, inviter paid only after the friend clears 5 levels, one welcome bonus per device.
+-- The full SQL of every applied migration is kept in the project (supabase_migrations.schema_migrations);
+-- `npx supabase db dump --schema public,private` writes the current schema to a file.
+-- =====================================================================

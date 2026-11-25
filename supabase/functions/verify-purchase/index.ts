@@ -1,6 +1,6 @@
 // Verifies a Google Play gem purchase before the game grants gems.
 // Flow: game sends {code, secret, product, token} -> this function asks Google whether the purchase is real
-// -> records the token once in the purchases table -> replies with the gems to add. The game then consumes the purchase.
+// -> records the token once and credits the player's gem balance on the server -> the game then consumes the purchase.
 // Needs the secret GOOGLE_PLAY_SERVICE_ACCOUNT (the JSON key of a service account linked in Play Console).
 // Only the Skylance backend may call it: it sends its key in x-backend-key, which the database checks.
 
@@ -111,5 +111,5 @@ Deno.serve(async (req) => {
   if (!rr.ok) return reply(500, { ok: false, error: "db_error" });
   const r = await rr.json();
   if (!r.ok) return reply(403, { ok: false, error: r.error });
-  return reply(200, { ok: true, gems, first: r.first, consumed: p.consumptionState === 1 });
+  return reply(200, { ok: true, gems, first: r.first, consumed: p.consumptionState === 1, profile: r.profile });
 });
