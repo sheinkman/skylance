@@ -292,6 +292,7 @@
 // ====================================================================
 const W = 640, H = 360, SEA = 332;
 const G = 0.115, FLAP = 2.35, VY_MAX = 3.6, VY_MIN = -4;
+const PLAYER_FALL_G = 0.7, PLAYER_VY_MAX = 2.5; // player falls ~30% slower than enemies
 const RW = 18, RH = 24, SPR = 1.45;
 const TAU = Math.PI * 2;
 
@@ -1372,7 +1373,10 @@ function control(r, dir, flap) {
     else if (!boosting) r.vx *= r.isPlayer ? 0.975 : 0.995;
   }
   r.vx = clamp(r.vx, -airMax, airMax);
-  if (boosting) r.vy *= 0.85; else r.vy = Math.min(r.vy + G * (ins ? ins.grav : 1) * (THEME === 'cosmic' ? 0.72 : 1), VY_MAX);
+  // The player glides down more gently than enemies: lower gravity while falling and a lower top fall speed.
+  // Rising (each flap) is unchanged, so a flap still lifts the same height.
+  const fallK = r.isPlayer && r.vy > 0 ? PLAYER_FALL_G : 1, vyMax = r.isPlayer ? PLAYER_VY_MAX : VY_MAX;
+  if (boosting) r.vy *= 0.85; else r.vy = Math.min(r.vy + G * fallK * (ins ? ins.grav : 1) * (THEME === 'cosmic' ? 0.72 : 1), vyMax);
   if (wind.t > 0 && !r.onGround) r.vx += wind.dir * 0.045;
   moveBody(r);
   if (r.wingT > 0) r.wingT--;
