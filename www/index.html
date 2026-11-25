@@ -429,7 +429,7 @@ function layoutOK(out) {
       for (let j = i + 1; j < plats.length; j++) {
         const [xj, yj] = pos[j], dy = Math.abs(yi - yj);
         const ox = Math.min(xi + plats[i].w, xj + plats[j].w) - Math.max(xi, xj);
-        if (ox > -34 && dy < 42) return false;
+        if (ox > -34 && dy < 48) return false;
       }
     }
   }
@@ -442,16 +442,16 @@ function genLayout(r, l) {
     const Rn = (a, b) => a + rand() * (b - a);
     const sw = Math.round(Rn(90, 116));
     const out = [{ x: 0, y: 300, w: sw, shore: 1 }, { x: W - sw, y: 300, w: sw, shore: 1 }];
-    const rows = [256, 200, 142, 86, theme === 'cave' ? 46 : 40];
-    const counts = [2, 2 + (rand() < 0.5 ? 1 : 0), 2 + (rand() < 0.6 ? 1 : 0), 2 + (rand() < 0.5 ? 1 : 0), 1 + (rand() < 0.5 ? 1 : 0)];
+    const rows = [258, 188, 118, theme === 'cave' ? 54 : 50];
+    const counts = [2, 2 + (rand() < 0.45 ? 1 : 0), 2 + (rand() < 0.4 ? 1 : 0), 1 + (rand() < 0.5 ? 1 : 0)];
     rows.forEach((ry, ri) => {
       const segs = [];
       let lo = 10, hi = W - 10;
       if (ri === 0) { lo = sw + 6; hi = W - sw - 6; }
-      if (ri === 3 && rand() < 0.5) { const a = Math.round(Rn(50, 72)), b = Math.round(Rn(46, 68)); segs.push({ x: 0, w: a }, { x: W - b, w: b }); lo = a + 40; hi = W - b - 40; }
+      if (ri === 2 && rand() < 0.45) { const a = Math.round(Rn(50, 72)), b = Math.round(Rn(46, 68)); segs.push({ x: 0, w: a }, { x: W - b, w: b }); lo = a + 40; hi = W - b - 40; }
       const n = counts[ri], span = (hi - lo) / n;
       for (let k = 0; k < n; k++) {
-        const w = Math.round(Math.min(Rn(ri === 0 ? 96 : 68, ri === 0 ? 136 : 112) * (ri === 4 ? 0.8 : 1), span - 38));
+        const w = Math.round(Math.min(Rn(ri === 0 ? 96 : 70, ri === 0 ? 136 : 116) * (ri === 3 ? 0.85 : 1), span - 44));
         if (w < 50) continue;
         const cx = lo + span * (k + 0.5) + Rn(-span * 0.15, span * 0.15);
         segs.push({ x: Math.round(clamp(cx - w / 2, lo, hi - w)), w });
@@ -496,6 +496,19 @@ function setRealm(i, lvl = 1) {
   const src = layoutFor(i, lvl);
   PLATS = src.map((p, j) => ({ ...p, h: p.shore ? SEA - p.y + 30 : 12, id: j + i * 20 + lvl * 100, ct: 0, gone: 0, bx: p.x, by: p.y, dx: 0, dy: 0 }));
   for (const p of PLATS) if (p.move) { const ph = p.move.ph || 0; p.x = p.bx + Math.sin(ph) * (p.move.ax || 0); p.y = p.by + Math.sin(ph) * (p.move.ay || 0); }
+  // painted island depth: shorten the underside so riders always have room to fly beneath it
+  const surf = SURF['island_' + THEME] || 0.05, env = q => { const ax = q.move ? q.move.ax || 0 : 0, ay = q.move ? q.move.ay || 0 : 0; return { l: q.bx - ax - 6, r: q.bx + q.w + ax + 6, top: q.by - ay, bot: q.by + ay }; };
+  for (const p of PLATS) {
+    if (p.shore) continue;
+    const e = env(p); let lim = Math.min(54, 16 + p.w * 0.3);
+    for (const q of PLATS) {
+      if (q === p) continue;
+      const f2 = env(q);
+      if (f2.top <= e.bot || Math.min(e.r, f2.r) - Math.max(e.l, f2.l) <= 0) continue;
+      lim = Math.min(lim, (f2.top - e.bot - 28) / (1 - surf));
+    }
+    p.dh = Math.max(18, lim);
+  }
   SPAWNS = PLATS.filter(p => p.spawn);
   const shores = PLATS.filter(p => p.shore);
   SEA_L = shores[0].x + shores[0].w; SEA_R = shores[1].x;
@@ -2671,7 +2684,7 @@ function drawBackground() {
   }
 }
 function drawIslandSprite(p, im, ox, oy) {
-  const dw = p.w + 10, dh = Math.min(54, 16 + p.w * 0.3), sx = p.x - 5 + ox, sy = p.y + oy - SURF['island_' + THEME] * dh - 1;
+  const dw = p.w + 10, dh = p.dh || Math.min(54, 16 + p.w * 0.3), sx = p.x - 5 + ox, sy = p.y + oy - SURF['island_' + THEME] * dh - 1;
   const cw = im.width * 0.22, capW = Math.min(dw / 2, cw * dh / im.height);
   ctx.drawImage(im, 0, 0, cw, im.height, sx, sy, capW, dh);
   ctx.drawImage(im, cw, 0, im.width - 2 * cw, im.height, sx + capW, sy, dw - 2 * capW, dh);
