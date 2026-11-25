@@ -53,6 +53,8 @@
   .logo{margin:0;font-size:clamp(46px,11vw,96px);font-weight:900;letter-spacing:2px;line-height:1;
     background:linear-gradient(180deg,#ffffff 20%,#8fe2ff 70%,#6a8cff);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 18px rgba(120,100,255,.65))}
+  #logo-img{display:block;width:clamp(260px,58vw,620px);height:auto;filter:drop-shadow(0 6px 24px rgba(60,120,255,.45))}
+  #logo-img[hidden],#logo-text[hidden]{display:none}
   .tag{margin:0;color:var(--muted);font-size:14px;font-weight:600;text-align:center}
   .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
   .ui-btn{appearance:none;border:1px solid var(--edge);background:var(--glass);color:var(--ink);font:800 15px var(--font);letter-spacing:.6px;
@@ -137,7 +139,7 @@
 
 <section id="s-title" class="screen">
   <div class="topbar"><button class="ui-btn small" id="b-sound">Sound: On</button><span class="gems"><span class="gem"></span><span id="g-title">0</span></span></div>
-  <h1 class="logo">SKYLANCE</h1>
+  <h1 class="logo"><span id="logo-text">SKYLANCE</span><img id="logo-img" src="assets/logo.png" alt="SKYLANCE" hidden onload="this.hidden=false;document.getElementById('logo-text').hidden=true"></h1>
   <p class="tag">Ride the skies. Strike from above. Claim every realm.</p>
   <div class="row">
     <button class="ui-btn primary" id="b-play">Play</button>
@@ -234,6 +236,31 @@ function glow(g, x, y, r, color, a = 1) {
   g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.globalAlpha = 1;
 }
 const fmt = n => Math.floor(n).toLocaleString('en-US');
+
+// ---------- Gemini-painted sprites (fall back to code-drawn art until loaded) ----------
+const IMG = {};
+const THEMES = ['sea', 'cave', 'storm', 'ember', 'desert', 'sky'];
+const SPRITE_LIST = [
+  ...THEMES.map(t => 'bg_' + t), ...THEMES.map(t => 'island_' + t), ...THEMES.map(t => 'shore_' + t),
+  'rider_silver', 'rider_gold', 'rider_rose', 'rider_obsidian', 'enemy_scout', 'enemy_raider', 'enemy_elite',
+  'mount_dragonfly', 'mount_moth', 'mount_humming', 'mount_beetle', 'mount_phoenix',
+  'insect_wasp', 'insect_firefly', 'insect_mosquito', 'insect_beetle', 'insect_locust', 'insect_ladybug',
+  'walker_guard', 'walker_spiker', 'boss_queen', 'boss_moth', 'boss_drake', 'boss_wyrm', 'boss_scarab', 'boss_jelly', 'cocoon', 'gem',
+];
+for (const id of SPRITE_LIST) {
+  const im = new Image();
+  im.onload = () => { IMG[id] = im; if (id.startsWith('mount_') || id.startsWith('rider_')) shopDirty = true; };
+  im.src = 'assets/' + id + (id.startsWith('bg_') ? '.jpg' : '.png');
+}
+let shopDirty = false;
+// fraction of each image's height where the walkable top surface sits
+const SURF = { island_sea: 0.066, island_cave: 0.016, island_storm: 0.015, island_ember: 0.016, island_desert: 0.258, island_sky: 0.019,
+  shore_sea: 0, shore_cave: 0.086, shore_storm: 0.005, shore_ember: 0.014, shore_desert: 0.009, shore_sky: 0.009 };
+const MOUNT_SPR = { dragonfly: { w: 34, wing: { n: 4, len: 18, wid: 5 } }, moth: { w: 27, wing: { moth: 1 } }, humming: { w: 28, wing: { n: 2, len: 15, wid: 4.4, buzz: 1 } },
+  beetle: { w: 25, wing: { n: 2, len: 16, wid: 5, fly: 1 } }, phoenix: { w: 30, wing: { n: 2, len: 18, wid: 6.5 } } };
+const INSECT_SPR = { wasp: { w: 27, wing: { n: 2, len: 13, wid: 5, buzz: 1 } }, firefly: { w: 29, wing: { n: 2, len: 15, wid: 5 } }, mosquito: { w: 31, wing: { n: 2, len: 14, wid: 3.6, buzz: 1 } },
+  beetle: { w: 27, wing: { n: 2, len: 16, wid: 5, fly: 1, warm: 1 } }, locust: { w: 28, wing: { n: 2, len: 18, wid: 4.4 } }, ladybug: { w: 22, wing: { n: 2, len: 16, wid: 5.4, fly: 1 } } };
+const BOSS_SPR = { queen: [66, 0.5], moth: [82, 0.5], drake: [80, 0.5], scarab: [62, 0.55], jelly: [92, 0.28], wyrm: [130, 0.15] };
 
 // ---------- catalog ----------
 const MOUNTS = {
@@ -2135,10 +2162,59 @@ function drawLadybug(g, pal, r) {
   g.strokeStyle = '#141418'; g.lineWidth = 0.5; g.beginPath(); g.moveTo(7, 15); g.lineTo(9.4, 12.6); g.stroke();
   g.fillStyle = '#141418'; g.beginPath(); g.arc(9.6, 12.4, 0.7, 0, TAU); g.fill();
 }
+function drawSpriteWings(g, ws, rx, ry, pal, r, front) {
+  if (ws.fly && r.onGround) return;
+  const a = wingAngle(r, !!ws.buzz);
+  const cA = pal.wingA || (ws.warm ? 'rgba(255,200,150,.45)' : 'rgba(230,236,255,.5)'), cB = pal.wingB || 'rgba(255,255,255,.14)';
+  if (ws.moth) { mothWing(g, rx - 1, ry, front ? 16 : 15, front ? 11 : 10, a + (front ? 0 : 0.3), { wingA: cA, wingB: cB, eye2: pal.eye2 || '#2a1a4a' }, front ? 1 : 0.75); return; }
+  if (front) { drawWing(g, rx, ry, ws.len, ws.wid, a, cA, cB); if (ws.n === 4) drawWing(g, rx - 3, ry, ws.len - 2, ws.wid * 0.92, a - 0.12, cA, cB); }
+  else { drawWing(g, rx - 2, ry + 0.5, ws.len - 1, ws.wid * 0.9, a + 0.28, 'rgba(200,220,255,.3)', 'rgba(255,255,255,.1)'); if (ws.n === 4) drawWing(g, rx + 1, ry + 0.5, ws.len, ws.wid, a + 0.18, 'rgba(200,220,255,.3)', 'rgba(255,255,255,.1)'); }
+}
+function drawMountSprite(g, id, spec, pal, r) {
+  const im = IMG[id];
+  if (!im || !spec) return null;
+  const ratio = im.height / im.width, h = Math.min(spec.w * ratio, 15), w = h / ratio, top = 23.5 - h, ry = top + Math.min(4, h * 0.3);
+  drawSpriteWings(g, spec.wing, 1, ry, pal, r, false);
+  const bob = r.onGround ? 0 : Math.sin(frame * 0.2 + (r.anim || 0)) * 0.4;
+  g.drawImage(im, -2 - w * 0.5, top + bob, w, h);
+  drawSpriteWings(g, spec.wing, 1, ry, pal, r, true);
+  return top;
+}
+function drawRiderSprite(g, id, mountTop, standing, lanceBoost) {
+  const im = IMG[id];
+  if (!im) return false;
+  const h = standing ? 22 : 20, w = h * im.width / im.height, bottom = standing ? 24 : mountTop + 7.5, left = -w * 0.38;
+  g.drawImage(im, left, bottom - h, w, h);
+  if (lanceBoost) glow(g, left + w + 1, bottom - h * 0.3, 10, 'rgba(255,220,90,.95)', 0.9);
+  return true;
+}
+function drawRiderSpriteFull(g, r, pal, mountId) {
+  const isP = r.isPlayer;
+  const riderId = isP ? 'rider_' + (r.armor || save.eq.armor) : 'enemy_' + ['scout', 'raider', 'elite'][r.tier || 0];
+  if (!IMG[riderId]) return false;
+  if (r.state === 'hatch') { g.save(); g.translate(0, 24); g.scale(1.2, 1.2); g.translate(0, -24); drawRiderSprite(g, riderId, 0, true, false); g.restore(); return true; }
+  const m = isP ? (mountId || save.eq.mount) : (r.sp || 'wasp');
+  const mid = (isP ? 'mount_' : 'insect_') + m, spec = isP ? MOUNT_SPR[m] : INSECT_SPR[m];
+  if (!IMG[mid] || !spec) return false;
+  glow(g, 0, 13, 16, isP ? 'rgba(90,220,255,.18)' : 'rgba(255,120,80,.10)');
+  g.save(); g.translate(0, 24); g.scale(1.25, 1.25); g.translate(0, -24);
+  const top = drawMountSprite(g, mid, spec, pal, r);
+  drawRiderSprite(g, riderId, top, false, isP && r.pw && r.pw.lance > 0);
+  g.restore();
+  return true;
+}
+function drawWalkerSprite(g, r) {
+  const im = IMG[r.spiky ? 'walker_spiker' : 'walker_guard'];
+  if (!im) return false;
+  const w = (r.spiky ? 27 : 26) * 1.15, h = w * im.height / im.width, bob = Math.abs(Math.sin(r.anim * 2)) * 0.6;
+  g.drawImage(im, -w / 2, 24 - h - bob, w, h);
+  return true;
+}
 function drawRiderAt(g, r, cx, y, palOverride, mountId) {
   const isP = r.isPlayer, pal = palOverride || (isP ? playerPal() : PAL_E[r.tier]);
   g.save(); g.translate(cx, y + RH); g.scale(r.face * SPR, SPR); g.translate(0, -RH);
-  if (r.kind === 'walker') { drawWalker(g, r); g.restore(); return; }
+  if (r.kind === 'walker') { if (!drawWalkerSprite(g, r)) drawWalker(g, r); g.restore(); return; }
+  if (drawRiderSpriteFull(g, r, pal, mountId)) { g.restore(); return; }
   if (r.state === 'hatch') drawKnight(g, pal, false, true, frame * 0.2);
   else {
     glow(g, 0, 13, 16, isP ? 'rgba(90,220,255,.18)' : 'rgba(255,120,80,.10)');
@@ -2197,6 +2273,8 @@ function drawCocoon(c) {
     ctx.globalCompositeOperation = 'lighter';
     glow(ctx, cx, cy, 15, pal.plume, 0.25 + pulse * 0.25 + (c.hatch < 90 ? 0.3 : 0));
     ctx.globalCompositeOperation = 'source-over';
+    const cim = IMG.cocoon;
+    if (cim) { const hh = 17, ww = hh * cim.width / cim.height; ctx.save(); ctx.translate(cx, cy); ctx.rotate(c.rot); ctx.drawImage(cim, -ww / 2, -hh / 2, ww, hh); ctx.restore(); return; }
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(c.rot); ctx.scale(1.35, 1.35);
     const g = ctx.createRadialGradient(-1.5, -2.5, 0.5, 0, 0, 8);
     g.addColorStop(0, '#ffffff'); g.addColorStop(0.6, '#e6dcc8'); g.addColorStop(1, '#a89880');
@@ -2212,7 +2290,8 @@ function drawFleer(f) {
   const fake = { wingT: 0, onGround: false, anim: f.t, tier: f.tier };
   ctx.save(); ctx.translate(f.x, f.y + RH); const fs = f.arrive ? f.face : Math.sign(f.vx) || 1; ctx.scale(fs * SPR, SPR); ctx.translate(0, -RH);
   ctx.globalAlpha = f.arrive ? 1 : clamp(1 - f.t / 80, 0, 1);
-  insectOf(f).draw(ctx, PAL_E[f.tier], fake);
+  if (IMG['insect_' + (f.sp || 'wasp')]) { ctx.translate(0, 24); ctx.scale(1.25, 1.25); ctx.translate(0, -24); drawMountSprite(ctx, 'insect_' + (f.sp || 'wasp'), INSECT_SPR[f.sp || 'wasp'], PAL_E[f.tier], fake); }
+  else insectOf(f).draw(ctx, PAL_E[f.tier], fake);
   ctx.restore(); ctx.globalAlpha = 1;
 }
 function drawPwIcon(g, type, x, y, s) {
@@ -2246,6 +2325,18 @@ function drawBoss() {
   drawWrapped(b.x - 40, 80, xx => {
     const x = xx + 40;
     ctx.save(); ctx.translate(x, b.y);
+    const bim = IMG['boss_' + b.type];
+    if (bim) {
+      if (b.type === 'wyrm' && b.ph === 'under') { ctx.restore(); return; }
+      const warn = (b.ph === 'warn' || b.ph === 'charge');
+      const gcol = { queen: 'rgba(255,200,60,.28)', moth: 'rgba(170,140,255,.3)', drake: 'rgba(140,180,255,.32)', scarab: 'rgba(255,200,80,.32)', jelly: 'rgba(150,220,255,.35)', wyrm: 'rgba(255,120,40,.35)' }[b.type];
+      glow(ctx, 0, 0, 64, warn ? `rgba(255,60,90,${0.3 + 0.3 * Math.sin(frame * 0.6)})` : gcol);
+      const [hh, ay] = BOSS_SPR[b.type], ww = hh * bim.width / bim.height;
+      const breathe = 1 + Math.sin(b.t * 0.15) * 0.03, sq = b.type === 'jelly' ? 1 - (b.sq || 0) * 0.15 : 1;
+      ctx.scale(b.face * (b.type === 'jelly' ? 1 + (b.sq || 0) * 0.1 : 1), breathe * sq);
+      ctx.drawImage(bim, -ww / 2, -hh * ay, ww, hh);
+      ctx.restore(); return;
+    }
     if (b.type === 'queen') {
       glow(ctx, 0, 0, 50, 'rgba(255,200,60,.25)');
       ctx.scale(b.face * 2.5, 2.5); ctx.translate(0, -16);
@@ -2520,6 +2611,12 @@ function drawSea(front) {
   ctx.fillStyle = mist; ctx.fillRect(0, SEA - 18, W, 24);
 }
 function drawBackground() {
+  const bim = IMG['bg_' + THEME];
+  if (bim) {
+    ctx.drawImage(bim, 0, 0, W, H);
+    if (skyFlash > 0) { ctx.fillStyle = `rgba(220,230,255,${skyFlash * 0.05})`; ctx.fillRect(0, 0, W, SEA); }
+    return;
+  }
   ctx.drawImage(ART.sky, 0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
   if (THEME === 'sea') {
@@ -2573,7 +2670,44 @@ function drawBackground() {
     ctx.globalCompositeOperation = 'source-over';
   }
 }
+function drawIslandSprite(p, im, ox, oy) {
+  const dw = p.w + 10, dh = Math.min(54, 16 + p.w * 0.3), sx = p.x - 5 + ox, sy = p.y + oy - SURF['island_' + THEME] * dh - 1;
+  const cw = im.width * 0.22, capW = Math.min(dw / 2, cw * dh / im.height);
+  ctx.drawImage(im, 0, 0, cw, im.height, sx, sy, capW, dh);
+  ctx.drawImage(im, cw, 0, im.width - 2 * cw, im.height, sx + capW, sy, dw - 2 * capW, dh);
+  ctx.drawImage(im, im.width - cw, 0, cw, im.height, sx + dw - capW, sy, capW, dh);
+}
+function drawShoreSprite(p, im, ox, oy) {
+  const dw = p.w + 8, dh = dw * im.height / im.width, sx = (p.x === 0 ? -8 : p.x) + ox, sy = p.y + oy - SURF['shore_' + THEME] * dh - 1;
+  if (p.x === 0) { ctx.save(); ctx.translate(sx + dw, 0); ctx.scale(-1, 1); ctx.drawImage(im, 0, sy, dw, dh); ctx.restore(); }
+  else ctx.drawImage(im, sx, sy, dw, dh);
+}
+function drawPlatOverlay(p, ox, oy) {
+  const x = p.x + ox, y = p.y + oy;
+  if (p.move) {
+    const cx = x + p.w / 2, cy = y + 16 + p.w * 0.07;
+    glow(ctx, cx, cy, 16, 'rgba(140,240,255,.7)');
+    ctx.strokeStyle = 'rgba(200,250,255,.9)'; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 3, cy); ctx.lineTo(cx + 3, cy); ctx.moveTo(cx, cy - 3); ctx.lineTo(cx, cy + 3); ctx.stroke();
+  }
+  if (p.crumble) {
+    for (const [col, lw] of [['rgba(20,6,4,.9)', 1.2], ['rgba(255,120,40,.75)', 0.5]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw;
+      for (let i = 0; i < 4; i++) { const cx = x + p.w * (0.15 + i * 0.23); ctx.beginPath(); ctx.moveTo(cx, y - 1); ctx.lineTo(cx + 3, y + 3); ctx.lineTo(cx - 1, y + 7); ctx.stroke(); }
+    }
+  }
+  if (p.bounce) {
+    glow(ctx, x + p.w / 2, y, p.w * 0.4, 'rgba(255,110,210,.55)');
+    const bg2 = ctx.createLinearGradient(0, y - 3, 0, y + 3); bg2.addColorStop(0, '#ffd6f4'); bg2.addColorStop(1, '#ff5ac8');
+    ctx.fillStyle = bg2; rrect(ctx, x + p.w * 0.18, y - 3, p.w * 0.64, 5, 2.5); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 1.2;
+    for (const dx of [-8, 0, 8]) { ctx.beginPath(); ctx.moveTo(x + p.w / 2 + dx - 3, y - 5); ctx.lineTo(x + p.w / 2 + dx, y - 8); ctx.lineTo(x + p.w / 2 + dx + 3, y - 5); ctx.stroke(); }
+  }
+  if (p.phase) { ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(90,120,190,.9)'; ctx.lineWidth = 0.9; rrect(ctx, x, y - 2, p.w, 9, 4); ctx.stroke(); ctx.setLineDash([]); }
+}
 function drawPlatforms() {
+  const isl = IMG['island_' + THEME], shr = IMG['shore_' + THEME];
   for (let i = 0; i < PLATS.length; i++) {
     const p = PLATS[i], a = ART.plats[i];
     let ox = 0, oy = 0;
@@ -2581,7 +2715,9 @@ function drawPlatforms() {
     else if (p.crumble && p.ct > 25) { ox = Math.sin(frame * 1.3) * (p.ct / 80) * 1.6; oy = (p.ct / 80) * 1.2; }
     else if (p.phase) ctx.globalAlpha = p.off ? 0.12 : p.fadeK < 1 ? (0.3 + 0.7 * p.fadeK) * ((frame >> 2) % 2 ? 0.55 : 1) : 1;
     if (p.sq > 0.02) { oy += p.sq * 2.5; p.sq *= 0.85; }
-    ctx.drawImage(a.c, p.x - a.pad + ox, p.y - a.pad + oy, a.w, a.h);
+    if (p.shore && shr) drawShoreSprite(p, shr, ox, oy);
+    else if (!p.shore && isl) { drawIslandSprite(p, isl, ox, oy); drawPlatOverlay(p, ox, oy); }
+    else ctx.drawImage(a.c, p.x - a.pad + ox, p.y - a.pad + oy, a.w, a.h);
     ctx.globalAlpha = 1;
     if (p.move && game.state === 'play' && frame % 5 === 0) parts.push({ x: p.x + p.w / 2 + rnd(-4, 4), y: p.y + 22 + p.w / 12, vx: -p.dx * 0.5, vy: 0.4 - p.dy * 0.5, l: 22, L: 22, c: 'rgba(150,240,255,.8)', s: 1.2, glow: true, g: 0 });
   }
@@ -2675,9 +2811,12 @@ function drawHUD() {
   ctx.textAlign = 'center'; ctx.font = `800 9px ${FONT}`; ctx.fillStyle = '#ffe9a8';
   ctx.fillText(game.mode === 'endless' ? 'WAVE ' + wave : `LEVEL ${game.realm + 1}-${game.level}`, W / 2, 16.5);
   pill(W - 140, 7, 82, 18);
-  ctx.save(); ctx.translate(W - 128, 16); ctx.rotate(Math.PI / 4);
-  const gg = ctx.createLinearGradient(-3, -3, 3, 3); gg.addColorStop(0, '#e8ffff'); gg.addColorStop(1, '#3a8bff');
-  ctx.fillStyle = gg; ctx.fillRect(-2.8, -2.8, 5.6, 5.6); ctx.restore();
+  if (IMG.gem) ctx.drawImage(IMG.gem, W - 134, 11, 12, 12 * IMG.gem.height / IMG.gem.width);
+  else {
+    ctx.save(); ctx.translate(W - 128, 16); ctx.rotate(Math.PI / 4);
+    const gg = ctx.createLinearGradient(-3, -3, 3, 3); gg.addColorStop(0, '#e8ffff'); gg.addColorStop(1, '#3a8bff');
+    ctx.fillStyle = gg; ctx.fillRect(-2.8, -2.8, 5.6, 5.6); ctx.restore();
+  }
   ctx.font = `800 9px ${FONT}`; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(fmt(save.gems + (game.state === 'result' ? 0 : runGems)), W - 66, 16.5);
   if (wind.t > 0) {
     ctx.textAlign = 'center'; ctx.font = `800 8px ${FONT}`; ctx.fillStyle = `rgba(220,235,255,${0.6 + 0.4 * Math.sin(frame * 0.2)})`;
@@ -2740,7 +2879,7 @@ function render() {
     drawShots();
   }
   if (inGame) { drawBolts(); drawPShots(); }
-  if (THEME === 'cave') { ctx.drawImage(ART.ceiling, 0, 0, W, 40); drawStals(); }
+  if (THEME === 'cave') { if (!IMG.bg_cave) ctx.drawImage(ART.ceiling, 0, 0, W, 40); drawStals(); }
   drawParts();
   drawSea(true);
   if (serp.ph === 1 && game.state === 'play') {
@@ -2806,6 +2945,7 @@ function previewCanvas(kind, id) {
   if (kind === 'mount') { Object.assign(pal, MOUNTS[id].pal); mount = id; }
   if (kind === 'armor') Object.assign(pal, ARMORS[id].pal);
   const r = { isPlayer: true, face: 1, wingT: 8, onGround: false, anim: 1, state: 'active', pw: { lance: 0 } };
+  if (kind === 'armor') r.armor = id;
   if (kind === 'trail') {
     const tr = TRAILS[id];
     g.globalCompositeOperation = 'lighter';
@@ -2816,8 +2956,9 @@ function previewCanvas(kind, id) {
     }
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
   }
-  g.save(); g.translate(80, 50); g.scale(1.55, 1.55); g.translate(-80, -50);
-  drawRiderAt(g, r, 80, 40, pal, mount); g.restore();
+  const big = IMG['rider_' + save.eq.armor] ? 1.85 : 1.55;
+  g.save(); g.translate(70, 50); g.scale(big, big); g.translate(-70, -50);
+  drawRiderAt(g, r, 70, 47, pal, mount); g.restore();
   return c;
 }
 function openShop(tab) {

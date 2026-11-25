@@ -1,0 +1,481 @@
+{
+  "style": "Painterly modern fantasy mobile game art, rich saturated colors, soft rim lighting, crisp clean edges.",
+  "styles": {
+    "toon": "Chunky cute cartoon proportions with a big head and small body, bold clean shapes, thin dark outline, painterly shading, modern mobile game character art. Seen exactly from the side in profile, facing right.",
+    "bug": "Detailed semi-realistic painterly insect illustration with glossy highlights, natural anatomy, game sprite quality. Seen exactly from the side in profile, facing right, body perfectly horizontal and level, as if hovering in flight.",
+    "boss": "Detailed semi-realistic painterly fantasy creature, dramatic lighting, imposing, game boss sprite quality. Seen from the side, facing right.",
+    "scene": "Painterly modern fantasy mobile game background art, rich colors, soft atmospheric light, depth and haze. No characters, no creatures, no foreground platforms, no text, no UI.",
+    "prop": "Painterly modern fantasy mobile game asset, clean readable silhouette, soft lighting, seen from the side."
+  },
+  "assets": [
+    {
+      "id": "bg_sea",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a magical night sky over a calm moonlit sea, a large glowing moon on the right, green and violet aurora ribbons, soft purple and pink clouds, distant floating island silhouettes and mountains on the horizon."
+    },
+    {
+      "id": "bg_cave",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: inside a vast dark crystal cavern, glowing cyan, violet and pink crystal clusters on the far walls, hanging stalactites at the top, misty depth, an underground teal lake glowing faintly at the bottom."
+    },
+    {
+      "id": "bg_storm",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: stormy sky over jagged snowy mountain peaks, dark blue-grey storm clouds, distant lightning glow inside the clouds, light snow and rain, a cold choppy dark sea at the bottom."
+    },
+    {
+      "id": "bg_ember",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a volcanic landscape at night, a large erupting volcano on the right with glowing lava rivers, dark red smoky sky with floating embers, a glowing orange lava sea at the bottom."
+    },
+    {
+      "id": "bg_desert",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a desert at sunset, a huge low golden sun in the center, ancient pyramids and broken stone columns on the dunes, purple and orange sky with first stars, a sea of golden quicksand at the bottom."
+    },
+    {
+      "id": "bg_sky",
+      "key": false,
+      "aspect": "16:9",
+      "size": [
+        1280,
+        720
+      ],
+      "style": "scene",
+      "prompt": "Wide game background: a bright sunny sky high above the clouds, a sun in the upper left with soft light rays, white fluffy cloud banks below, distant floating castles with pale blue towers resting on clouds."
+    },
+    {
+      "id": "island_sea",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating island platform for a 2D side-view game: a perfectly flat grassy top edge with tiny flowers and small glowing mushrooms, and an underside of purple rock tapering down to a point with hanging green vines and glowing blue crystals. Much wider than tall. Only the island."
+    },
+    {
+      "id": "island_cave",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating rock platform for a 2D side-view game: a perfectly flat top covered in pale blue moss and tiny crystal shards, and an underside of dark blue stone tapering down to a point studded with glowing cyan and pink crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_storm",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating rock platform for a 2D side-view game: a perfectly flat top covered in fresh white snow, and an underside of grey slate rock tapering down to a point with hanging icicles and pale blue ice crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_ember",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating platform of dark volcanic basalt for a 2D side-view game: a perfectly flat top with glowing orange lava cracks, and an underside of black rock tapering down to a point with glowing orange fire crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_desert",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating sandstone platform for a 2D side-view game: a perfectly flat top of golden sand with a small cactus and ripples, and an underside of layered orange sandstone tapering down to a point with glowing amber crystals. Much wider than tall. Only the platform."
+    },
+    {
+      "id": "island_sky",
+      "size": [
+        480,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "A single wide flat-topped floating cloud platform for a 2D side-view game: a flat soft white cloud top with a few tiny golden flowers, and a puffy fluffy white and pale blue cloud underside with small glowing golden crystals. Much wider than tall. Only the cloud platform."
+    },
+    {
+      "id": "shore_sea",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of purple rock cliff for a 2D side-view game ledge: a perfectly flat grassy top with small flowers, a rugged vertical rock face below. Taller than wide. Only the cliff chunk."
+    },
+    {
+      "id": "shore_cave",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of dark blue cave stone for a 2D side-view game ledge: a perfectly flat top with pale blue moss and crystal shards, a rugged vertical stone face below with small glowing crystals. Taller than wide. Only the stone chunk."
+    },
+    {
+      "id": "shore_storm",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of grey slate cliff for a 2D side-view game ledge: a perfectly flat top covered in snow, a rugged vertical rock face below with icicles. Taller than wide. Only the cliff chunk."
+    },
+    {
+      "id": "shore_ember",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of black volcanic basalt for a 2D side-view game ledge: a perfectly flat top with glowing lava cracks, a rugged vertical rock face below with glowing orange seams. Taller than wide. Only the rock chunk."
+    },
+    {
+      "id": "shore_desert",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall chunk of layered orange sandstone cliff for a 2D side-view game ledge: a perfectly flat sandy top, a vertical striped sandstone face below. Taller than wide. Only the cliff chunk.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "shore_sky",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "prop",
+      "prompt": "A tall fluffy white cloud bank for a 2D side-view game ledge: a flat soft top, puffy cloud billows below fading to pale blue. Taller than wide. Only the cloud bank.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "rider_silver",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small heroic knight sitting astride an invisible saddle with knees bent, in polished silver plate armor with a flowing blue cape and a gold feather plume on the helmet, gripping a long wooden lance with a steel tip pointing straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "rider_gold",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small heroic knight sitting astride an invisible saddle with knees bent, in shining gold plate armor with a flowing crimson cape and a white feather plume, gripping a long wooden lance with a steel tip pointing straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "rider_rose",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small heroic knight sitting astride an invisible saddle with knees bent, in blush pink and white plate armor with a flowing rose pink cape and a white plume, gripping a long wooden lance with a steel tip pointing straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "rider_obsidian",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small heroic knight sitting astride an invisible saddle with knees bent, in glossy black obsidian armor with violet glowing trim, a flowing purple cape and a violet plume, gripping a long wooden lance with a steel tip pointing straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "enemy_scout",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small mischievous goblin-like warrior sitting astride an invisible saddle with knees bent, in green leaf-shaped armor with a horned helmet and glowing yellow-green eye slit, a short green cape, gripping a long lance with a pointed tip aimed straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "enemy_raider",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small fierce raider warrior sitting astride an invisible saddle with knees bent, in spiky dark crimson red armor (the armor itself is red, not white or silver) with a horned helmet and glowing orange eye slit, a tattered red cape, gripping a long lance with a pointed tip aimed straight forward to the right. Full body, no mount, no animal."
+    },
+    {
+      "id": "enemy_elite",
+      "size": [
+        null,
+        120
+      ],
+      "style": "toon",
+      "prompt": "A small menacing elite dark knight sitting astride an invisible saddle with knees bent, in ornate deep purple armor with large curved horns and glowing violet eye slit, a royal purple cape, gripping a long lance with a pointed tip aimed straight forward to the right. Full body, no mount, no animal.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "mount_dragonfly",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a cyan and teal dragonfly: big glossy compound eyes, segmented thorax, and a long thin segmented tail extending straight back horizontally to the left, six thin legs tucked under. NO wings at all. Full body."
+    },
+    {
+      "id": "mount_moth",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The fuzzy body of a lunar moth with lavender and violet fur and darker purple bands: round furry thorax, plump segmented furry abdomen extending back to the left, feathery antennae, small dark eyes, thin legs tucked under. NO wings at all. Full body.",
+      "bg": "bright orange (#FF8800)"
+    },
+    {
+      "id": "mount_humming",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of an emerald green hummingbird with an iridescent ruby red throat and a long thin black beak pointing right, forked tail feathers pointing back to the left. Wings folded tightly or hidden, NO open wings. Full body."
+    },
+    {
+      "id": "mount_beetle",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "A gilded jewel beetle with a polished golden shell with green metallic sheen, a small horn on its head pointing forward, six legs underneath. Shell closed, NO wings visible. Full body."
+    },
+    {
+      "id": "mount_phoenix",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "A small fiery phoenix bird body made of golden orange and red feathers, a crest of flame feathers on its head, a short hooked golden beak pointing right, long flowing flame tail feathers trailing back to the left. Wings folded against the body, NO open wings. Full body."
+    },
+    {
+      "id": "insect_wasp",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a yellow and black striped wasp: glossy striped abdomen with a sharp stinger at the back left, dark thorax, head with glowing red eyes, thin legs. NO wings at all. Full body."
+    },
+    {
+      "id": "insect_firefly",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a firefly beetle: dark brown wing covers closed, a red and black head shield, short antennae, and a large brightly glowing yellow-green lantern abdomen at the back left. NO open wings. Full body."
+    },
+    {
+      "id": "insect_mosquito",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a giant mosquito: thin striped grey and white abdomen extending back to the left, small hunched thorax, glowing red eyes, a long sharp needle proboscis pointing forward right, very long thin dangling legs. NO wings at all. Full body."
+    },
+    {
+      "id": "insect_beetle",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "A fire beetle: a dark red and black armored shell with glowing orange lava cracks, huge curved mandibles pointing forward to the right, glowing orange eyes, six sturdy legs. Shell closed, NO wings visible. Full body."
+    },
+    {
+      "id": "insect_locust",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "The body of a desert locust: olive green and sandy brown segmented body extending back to the left, large folded powerful hind legs, big brown eyes, long antennae. Wings folded flat along the back. Full body."
+    },
+    {
+      "id": "insect_ladybug",
+      "size": [
+        null,
+        90
+      ],
+      "style": "bug",
+      "prompt": "A large round ladybug: a glossy bright red dome shell with black spots, a black head with white cheek spots, short antennae, small black legs. Shell closed, NO wings visible. Full body.",
+      "bg": "green (#00FF00)"
+    },
+    {
+      "id": "walker_guard",
+      "size": [
+        null,
+        80
+      ],
+      "style": "bug",
+      "prompt": "A sturdy armored crawling bug, like a pill bug crossed with a beetle, with a smooth domed teal shell segmented into plates, a small head with one glowing yellow-green eye and a single curled antenna at the front right, six short legs walking. Full body."
+    },
+    {
+      "id": "walker_spiker",
+      "size": [
+        null,
+        80
+      ],
+      "style": "bug",
+      "prompt": "An armored crawling bug with a domed teal shell covered in sharp white spikes along its back, an angry small head with glowing red eyes at the front right, six short legs walking. Full body."
+    },
+    {
+      "id": "boss_queen",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant wasp queen boss: huge golden yellow and black striped abdomen with a big stinger at the back left, a small golden crown on her head, glowing red eyes, large opaque amber wings raised up, thin legs. Full body."
+    },
+    {
+      "id": "boss_moth",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant prism moth boss with huge spread opaque wings shimmering with rainbow prismatic colors and large eye spots, a fuzzy white body, feathery antennae, glowing magenta eyes. Full body, wings fully visible."
+    },
+    {
+      "id": "boss_drake",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A storm drake boss: a majestic bird-like dragon of pale blue and white feathers crackling with lightning, a crested head with a sharp beak, large opaque feathered wings raised, long flowing tail feathers. Full body.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "boss_wyrm",
+      "size": [
+        null,
+        240
+      ],
+      "aspect": "3:4",
+      "style": "boss",
+      "prompt": "A magma wyrm boss: the head and long upright serpent neck of a lava dragon rising vertically from below, black rock scales with glowing orange lava cracks, two big curved horns, glowing yellow eyes, open fanged mouth facing right. The neck is cut off at the bottom of the image."
+    },
+    {
+      "id": "boss_scarab",
+      "size": [
+        null,
+        200
+      ],
+      "style": "boss",
+      "prompt": "A giant scarab king beetle boss: a polished gold and lapis blue shell with Egyptian sun disc markings, a large forward horn, a golden crown-like head plate, glowing eyes, six legs. Shell closed. Full body.",
+      "bg": "bright green (#00FF00)"
+    },
+    {
+      "id": "boss_jelly",
+      "size": [
+        null,
+        220
+      ],
+      "aspect": "3:4",
+      "style": "boss",
+      "prompt": "A giant aurora jellyfish boss: a glowing translucent-looking dome bell in cyan and pink with a bright inner core, frilly edges, and many long flowing glowing tentacles hanging down. Seen from the side. Full body."
+    },
+    {
+      "id": "cocoon",
+      "size": [
+        null,
+        64
+      ],
+      "style": "prop",
+      "prompt": "A silky cream white insect cocoon wrapped in silk threads, upright oval shape, softly shaded, fully opaque. Only the cocoon.",
+      "bg": "deep navy blue (#101040)"
+    },
+    {
+      "id": "gem",
+      "size": [
+        null,
+        48
+      ],
+      "style": "prop",
+      "prompt": "A sparkling cut blue diamond gem, faceted, glowing softly. Only the gem."
+    },
+    {
+      "id": "logo",
+      "size": [
+        900,
+        null
+      ],
+      "aspect": "16:9",
+      "style": "prop",
+      "prompt": "The game title logo text SKYLANCE in bold heroic fantasy letters, polished silver and sky blue metallic with a glowing cyan edge, a small lance crossing behind the letters. Spell the word exactly S-K-Y-L-A-N-C-E. No dark glow or shadow behind the letters. Only the logo.",
+      "holes": true
+    },
+    {
+      "id": "icon_app",
+      "key": false,
+      "size": [
+        512,
+        512
+      ],
+      "style": "toon",
+      "prompt": "A mobile game app icon: a cute chunky knight in silver armor with a blue cape and gold plume riding a cyan dragonfly, lance forward, flying in front of a big glowing moon on a deep purple night sky. Rounded square composition, bold and readable, no text."
+    }
+  ]
+}
