@@ -120,6 +120,16 @@
   .stats{display:grid;grid-template-columns:auto auto;gap:4px 22px;font-size:14px;font-variant-numeric:tabular-nums;margin:0}
   .stats dt{color:var(--muted);font-weight:600}
   .stats dd{margin:0;font-weight:800;text-align:right}
+  .chlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+  .chlist li::before{content:"\25C7  ";color:#6a7090}
+  .chlist li.done{color:var(--gold)}
+  .chlist li.done::before{content:"\25C6  ";color:var(--gold)}
+  .chlist li.new::after{content:"  +15";color:#9fe8ff;font-weight:800}
+  .hardtab.on{background:rgba(255,70,90,.2);border-color:rgba(255,90,110,.6);color:#ffd0d8}
+  .medals{align-self:center;margin-left:8px;font-size:12px;font-weight:800;color:var(--gold)}
+  .lvl.hard{background:linear-gradient(160deg,rgba(110,20,40,.75),rgba(40,8,24,.85));border-color:rgba(255,90,110,.5)}
+  .lvl .md{font-size:9px;letter-spacing:1px;color:#5a5f80}
+  .lvl .md i{font-style:normal;color:#9fe8ff}
   .crit{font-size:12px;color:var(--muted);text-align:center;margin:0}
   @media (prefers-reduced-motion: reduce){.stars span.on{animation:none}}
   @media (max-height:420px){.logo{font-size:64px}.screen{gap:10px}.levels{width:min(470px,100%);gap:9px}.lvl{border-radius:14px;font-size:17px}.panel{padding:12px 20px;gap:7px}.stars{font-size:32px}.cards{max-height:58vh}}
@@ -156,6 +166,7 @@
     <div class="realm-title"><small id="realm-sub">REALM I</small><b id="realm-name">Moonlit Sea</b></div>
     <button class="ui-btn small" id="b-realm-next" aria-label="Next realm">&#9654;</button>
   </div>
+  <div class="tabs" id="mode-tabs"><button class="tab on" data-mode="normal">Normal</button><button class="tab hardtab" data-mode="hard">Nightmare</button><span class="medals" id="medals"></span></div>
   <div class="levels" id="levels"></div>
   <p class="hint" id="realm-hint"></p>
 </section>
@@ -174,6 +185,7 @@
     <div class="stars" id="r-stars"><span>&#9733;</span><span>&#9733;</span><span>&#9733;</span></div>
     <p class="crit" id="r-crit"></p>
     <dl class="stats" id="r-stats"></dl>
+    <ul class="chlist" id="r-ch"></ul>
     <div class="row" id="r-btns"></div>
   </div>
 </section>
@@ -181,6 +193,7 @@
 <section id="s-pause" class="screen dim" hidden>
   <div class="panel">
     <h2>Paused</h2>
+    <ul class="chlist" id="p-ch"></ul>
     <div class="row">
       <button class="ui-btn primary" id="b-resume">Resume</button>
       <button class="ui-btn" id="b-restart">Restart</button>
@@ -552,10 +565,10 @@ function setRealm(i, lvl = 1) {
 // ---------- save ----------
 const SAVE_KEY = 'skylance.save.v1';
 const DEF_OWNED = { mount: ['dragonfly'], trail: ['azure'], armor: ['silver'], weapon: ['darts'] }, DEF_EQ = { mount: 'dragonfly', trail: 'azure', armor: 'silver', weapon: 'darts' };
-const save = { gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, muted: false };
+const save = { gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, muted: false };
 try {
   const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-  if (d) { Object.assign(save, d); save.owned = { ...DEF_OWNED, ...d.owned }; save.eq = { ...DEF_EQ, ...d.eq }; save.up = { ...(d.up || {}) }; save.wlv = { ...(d.wlv || {}) }; }
+  if (d) { Object.assign(save, d); save.owned = { ...DEF_OWNED, ...d.owned }; save.eq = { ...DEF_EQ, ...d.eq }; save.up = { ...(d.up || {}) }; save.wlv = { ...(d.wlv || {}) }; save.hstars = { ...(d.hstars || {}) }; save.ch = { ...(d.ch || {}) }; }
   const old = +localStorage.getItem('skylance.best'); if (old > save.best) save.best = old;
 } catch (e) { }
 for (const k of ['mount', 'trail', 'armor', 'weapon']) if (!CATALOG[k][save.eq[k]]) save.eq[k] = DEF_EQ[k];
@@ -566,6 +579,25 @@ const titleCase = t => t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 const playerPal = () => ({ ...MOUNTS[save.eq.mount].pal, ...ARMORS[save.eq.armor].pal });
 const realmUnlocked = r => r === 0 || !!save.stars[`${r - 1}-10`];
 const levelUnlocked = (r, l) => realmUnlocked(r) && (l === 1 || !!save.stars[`${r}-${l - 1}`]);
+const hardUnlocked = (r, l) => !!save.stars[`${r}-10`] && (l === 1 || !!save.hstars[`${r}-${l - 1}`]);
+const hk = () => game.mode === 'campaign' && game.hard ? 0.7 : 1;
+// ---------- level challenges ----------
+function challengesFor(r, l) {
+  const par = l === 10 ? 100 : 30 + Math.min(3 + Math.floor(l * 0.5) + Math.min(r, 2) * 2, 10) * 7;
+  const C = {
+    flawless: { t: 'Take no hits', ok: s => s.hits === 0 },
+    combo: (n => ({ t: `Reach a x${n} combo`, ok: s => s.maxCombo >= n }))(2 + Math.floor(l / 4)),
+    speed: (t => ({ t: `Finish in under ${t}s`, ok: s => s.secs <= t }))(Math.round(par * (l === 10 ? 0.8 : 0.7))),
+    noweapon: { t: "Don't fire your weapon", ok: s => s.shots === 0 },
+    aircatch: (k => ({ t: `Catch ${k} cocoons in mid-air`, ok: s => s.airCatch >= k }))(l === 5 ? 3 : 2),
+    gems: (g => ({ t: `Earn ${g} gems in the level`, ok: s => s.gems >= g }))(8 + l * 2 + r * 2),
+  };
+  if (l === 10) return [C.flawless, C.speed, C.noweapon];
+  if (l === 5) return [C.flawless, C.aircatch, C.speed];
+  const extra = ['speed', 'noweapon', 'aircatch', 'gems'][(r * 7 + l * 3) % 4];
+  return [C.flawless, C.combo, C[extra]];
+}
+const medalCount = () => Object.values(save.ch).reduce((n, m) => n + ((m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)), 0);
 
 // ---------- art cache ----------
 let ART = {};
@@ -1012,7 +1044,9 @@ function addWalkers(n, spikyChance) {
   for (let i = 0; i < Math.min(n, cands.length); i++) enemies.push(makeWalker(cands[i], Math.random() < spikyChance));
   return Math.min(n, cands.length);
 }
+let run = { hits: 0, maxCombo: 0, airCatch: 0, shots: 0 };
 function resetRun() {
+  run = { hits: 0, maxCombo: 0, airCatch: 0, shots: 0 };
   enemies = []; cocoons = []; pending = []; parts = []; texts = []; fleers = []; pickups = []; shots = []; pshots = []; fx = [];
   boss = null; orb = null; orbDone = false; serp.ph = 0; serp.cd = 400; chain = 0; clearT = 0; waveT = 0; deaths = 0; runGems = 0; enemyTotal = 0; pickupT = 600;
   banner = { text: '', sub: '', t: 0 };
@@ -1034,14 +1068,15 @@ function spawnPlayer() {
   P.en = enMax();
 }
 
-function startLevel(r, l) {
-  game.mode = 'campaign'; game.realm = r; game.level = l;
+function startLevel(r, l, hard) {
+  game.mode = 'campaign'; game.realm = r; game.level = l; game.hard = !!hard;
   setRealm(r, l); resetRun();
-  score = 0; lives = 3 + UP('lives'); nextLife = 20000; wave = l; spawnPlayer();
+  score = 0; lives = 3 + UP('lives') - (game.hard ? 1 : 0); nextLife = 20000; wave = l; spawnPlayer();
   const d = l + r * 6;
   const R = REALMS[r];
   if (l === 10) {
     spawnBoss(R.boss);
+    if (game.hard) { boss.max = Math.round(boss.max * 1.5); boss.hp = boss.max; }
     banner = { text: 'BOSS', sub: R.bossName + ' — strike it from above', t: 160 }; SFX.boss();
   } else if (l === 5) {
     const n = 5 + r * 2;
@@ -1049,11 +1084,11 @@ function startLevel(r, l) {
     enemyTotal = n;
     banner = { text: `${r + 1}-${l}`, sub: 'Hatchery! Grab the cocoons before they hatch', t: 150 }; SFX.wave();
   } else {
-    const count = Math.min(3 + Math.floor(l * 0.5) + Math.min(r, 2) * 2, 10);
+    const count = Math.min(3 + Math.floor(l * 0.5) + Math.min(r, 2) * 2 + (game.hard ? 2 : 0), game.hard ? 12 : 10);
     const p1 = clamp((d - 1) * 0.12, 0, 0.6), p2 = clamp((d - 5) * 0.07, 0, 0.45);
-    for (let i = 0; i < count; i++) { const x = Math.random(); pending.push({ tier: x < p2 ? 2 : x < p2 + p1 ? 1 : 0, delay: 40 + i * 50 }); }
+    for (let i = 0; i < count; i++) { const x = Math.random(); pending.push({ tier: Math.min(2, (x < p2 ? 2 : x < p2 + p1 ? 1 : 0) + (game.hard ? 1 : 0)), delay: 40 + i * 50 }); }
     enemyTotal = count;
-    const nw = l === 1 ? 0 : Math.min(1 + Math.floor((l - 2) / 3) + (r >= 2 ? 1 : 0), 3);
+    const nw = (l === 1 && !game.hard) ? 0 : Math.min(1 + Math.floor((l - 2) / 3) + (r >= 2 ? 1 : 0) + (game.hard ? 1 : 0), game.hard ? 4 : 3);
     enemyTotal += addWalkers(nw, r === 0 ? (l >= 6 ? 0.3 : 0) : r === 1 ? 0.35 : 0.5);
     const subs = { 1: R.intro, 2: r === 0 ? 'Shell Guards patrol the islands. Stomp or shoot them' : 'Power-ups float in. Grab them!', 3: r === 1 ? 'Spikers cannot be stomped. Shoot or boost into them' : 'Chain kills in the air for a combo', 4: R.tip };
     banner = { text: `${r + 1}-${l}`, sub: subs[l] || R.name, t: 140 }; SFX.wave();
@@ -1062,7 +1097,7 @@ function startLevel(r, l) {
   enterPlay();
 }
 function startEndless() {
-  game.mode = 'endless'; setRealm(0); resetRun();
+  game.mode = 'endless'; game.hard = false; setRealm(0); resetRun();
   score = 0; lives = 4 + UP('lives'); nextLife = 20000; spawnPlayer();
   startWave(1); enterPlay();
 }
@@ -1087,7 +1122,7 @@ function startWave(n) {
 }
 function makeCocoon(x, y, vx, vy, tier, hatch) {
   const lvl = game.mode === 'campaign' ? game.level + game.realm * 5 : wave;
-  return { x: x - 5, y, w: 10, h: 13, vx, vy, tier, onGround: false, hatch: (hatch ?? Math.max(170, 380 - lvl * 15)) * (1 + 0.15 * UP('hatch')), t: 0, rot: 0 };
+  return { x: x - 5, y, w: 10, h: 13, vx, vy, tier, onGround: false, hatch: (hatch ?? Math.max(170, 380 - lvl * 15)) * (1 + 0.15 * UP('hatch')) * (game.mode === 'campaign' && game.hard ? 0.7 : 1), t: 0, rot: 0 };
 }
 function addScore(n, x, y, label) {
   score += n;
@@ -1159,7 +1194,7 @@ function control(r, dir, flap) {
   const ins = r.isPlayer ? null : insectOf(r);
   const stick = r.sticky > 0 ? 0.55 : 1;
   if (r.sticky > 0) { r.sticky--; if (frame % 6 === 0) parts.push({ x: r.x + 9 + rnd(-6, 6), y: r.y + 20, vx: 0, vy: 0.6, l: 26, L: 26, c: '#ffc040', s: 1.4, glow: false, g: 0.08 }); }
-  const airMax = (boosting ? 7.5 : r.isPlayer ? (dash ? 5.4 : 3.8) * wingK : [2.0, 2.6, 3.2][r.tier] * ins.air) * stick;
+  const airMax = (boosting ? 7.5 : r.isPlayer ? (dash ? 5.4 : 3.8) * wingK : [2.0, 2.6, 3.2][r.tier] * ins.air * (game.mode === 'campaign' && game.hard ? 1.15 : 1)) * stick;
   if (dir) r.face = dir;
   if (flap) {
     r.vy = Math.max(r.vy - FLAP * (r.isPlayer ? 1 + 0.03 * UP('wing') : ins.flap) * (stick < 1 ? 0.75 : 1), VY_MIN); r.wingT = 12; r.onGround = false;
@@ -1283,7 +1318,7 @@ function updatePlayer() {
 function hurtPlayer(srcX) {
   if (P.state !== 'active' || P.invuln > 0) return false;
   if (P.pw.shield) {
-    P.pw.shield = false; P.invuln = 80; P.vy = -2.5; if (srcX !== undefined) P.vx = -(Math.sign(wdx(P.x + 9, srcX)) || 1) * 3;
+    run.hits++; P.pw.shield = false; P.invuln = 80; P.vy = -2.5; if (srcX !== undefined) P.vx = -(Math.sign(wdx(P.x + 9, srcX)) || 1) * 3;
     burst(P.x + 9, P.y + 12, 30, '#7ff0ff', 3, 35, 1.8); SFX.shield(); buzz('medium'); shake = 4;
     texts.push({ x: P.x + 9, y: P.y - 8, text: 'SHIELD BROKE', t: 50, c: '#9ff4ff' });
     return false;
@@ -1293,7 +1328,7 @@ function hurtPlayer(srcX) {
 function killPlayer(fx = true) {
   if (P.state !== 'active') return;
   if (fx) { const c = playerPal(); burst(P.x + 9, P.y + 12, 40, c.body1, 3, 50, 2.2); burst(P.x + 9, P.y + 12, 16, '#ffffff', 2, 30, 1.5); }
-  P.state = 'dead'; P.st = lives > 1 ? 110 : 90; lives--; deaths++; shake = 8; flash = 6; P.combo = 0; SFX.die(); buzz('heavy');
+  run.hits++; P.state = 'dead'; P.st = lives > 1 ? 110 : 90; lives--; deaths++; shake = 8; flash = 6; P.combo = 0; SFX.die(); buzz('heavy');
 }
 
 function updateEnemy(e) {
@@ -1358,7 +1393,7 @@ function defeat(e, how) {
     const wp = WALKER_PAL[THEME];
     burst(e.x + 9, e.y + 18, 26, wp.eye, 2.6, 40, 1.8); burst(e.x + 9, e.y + 18, 12, wp.s1, 2, 30, 1.6, false, 0.12);
     let mult = 1;
-    if (!P.onGround && how !== 'crush' && how !== 'zap') { P.combo++; mult = Math.min(P.combo, 5 + UP('combo')); }
+    if (!P.onGround && how !== 'crush' && how !== 'zap') { P.combo++; run.maxCombo = Math.max(run.maxCombo, P.combo); mult = Math.min(P.combo, 5 + UP('combo')); }
     const pts = e.pts * mult;
     addScore(pts, e.x + 9, e.y + 6, mult > 1 ? `+${fmt(pts)}  x${mult}` : undefined);
     addGems(e.spiky ? 2 : 1, e.x + 9, e.y + 6);
@@ -1372,7 +1407,7 @@ function defeat(e, how) {
   shake = 5; flash = 3; buzz('light');
   if (how === 'joust' || how === 'shot') {
     let mult = 1;
-    if (!P.onGround) { P.combo++; mult = Math.min(P.combo, 5 + UP('combo')); }
+    if (!P.onGround) { P.combo++; run.maxCombo = Math.max(run.maxCombo, P.combo); mult = Math.min(P.combo, 5 + UP('combo')); }
     const pts = Math.round(ENEMY_PTS[e.tier] * (how === 'shot' ? 0.8 : 1)) * mult;
     addScore(pts, e.x + 9, e.y - 6, mult > 1 ? `+${fmt(pts)}  x${mult}` : undefined);
     if (mult >= 2) banner = { text: 'COMBO x' + mult, sub: '', t: 45 };
@@ -1455,7 +1490,7 @@ function updateCocoons() {
     if (P.state === 'active') {
       const dx = wdx(P.x + 9, c.x + 5), dy = (c.y + 6) - (P.y + 12);
       if (Math.abs(dx) < 17 && Math.abs(dy) < 22) {
-        c.dead = true; chain++;
+        c.dead = true; chain++; if (!c.onGround) run.airCatch++;
         const pts = Math.min(250 * chain, 1000) + (c.onGround ? 0 : 500);
         addScore(pts, c.x + 5, c.y - 6, c.onGround ? '+' + pts : 'AIR CATCH +' + pts);
         addGems(1);
@@ -1540,7 +1575,7 @@ function hitOrb(d) { if (!orb || orb.shield) return false; orb.hp -= d; burst(or
 function fireWeapon() {
   const id = save.eq.weapon, w = WEAPONS[id], lv = save.wlv[id] || 0, cost = w.cost[lv];
   if (P.en < cost) return;
-  P.en -= cost; P.fireCd = w.cd[lv];
+  P.en -= cost; P.fireCd = w.cd[lv]; run.shots++;
   const f = P.face, x0 = P.x + 9 + f * 26, y0 = P.y + 2;
   if (id === 'darts') { pshots.push({ k: 'dart', x: x0, y: y0, vx: f * 8 + P.vx * 0.3, vy: 0, dmg: 1, pierce: lv >= 3 ? 2 : 0, hitset: new Set(), l: 80 }); SFX.pew(); }
   else if (id === 'spread') {
@@ -1637,7 +1672,7 @@ function updateHazards() {
         if (hurtPlayer(serp.x)) texts.push({ x: serp.x, y: serp.headY - 18, text: 'SNATCHED!', t: 70, c: '#ff9f9f' });
       }
       for (const e of enemies) if (e.state === 'active' && k > 0.3 && Math.abs(wdx(e.x + 9, serp.x)) < 12 && e.y + e.h > serp.headY) { e.dead = true; burst(e.x + 9, e.y + 10, 20, PAL_E[e.tier].plume, 2, 30); }
-      if (serp.t <= 0) { serp.ph = 0; serp.cd = rnd(220, 460); splash(serp.x); }
+      if (serp.t <= 0) { serp.ph = 0; serp.cd = rnd(220, 460) * hk(); splash(serp.x); }
     }
   }
   if (stals.length) {
@@ -1665,7 +1700,7 @@ function updateHazards() {
       wind.t = 240; wind.dir = Math.random() < 0.5 ? -1 : 1; wind.cd = 480 + Math.random() * 420;
     }
     if (--boltCd <= 0 && waveT > 240 && P.state === 'active' && !boss) {
-      boltCd = 280 - Math.min(game.level * 10, 100);
+      boltCd = (280 - Math.min(game.level * 10, 100)) * hk();
       bolts.push({ x: (P.x + 9 + rnd(-70, 70) + W) % W, t: 60, ph: 'warn' });
     }
     if (Math.random() < 0.003) skyFlash = 6;
@@ -1692,7 +1727,7 @@ function updateHazards() {
   }
   if (THEME === 'ember') {
     if (--burstCd <= 0 && waveT > 200 && game.level !== 10) {
-      burstCd = 170 - Math.min((game.mode === 'endless' ? wave : game.level) * 8, 80);
+      burstCd = (170 - Math.min((game.mode === 'endless' ? wave : game.level) * 8, 80)) * hk();
       bursts.push({ x: rnd(SEA_L + 10, SEA_R - 10), t: 50 });
     }
   }
@@ -1703,7 +1738,7 @@ function updateHazards() {
   bursts = bursts.filter(u => !u.dead);
   if (THEME === 'desert') {
     const maxTw = (game.mode === 'endless' ? wave >= 15 : game.level >= 6) ? 2 : 1;
-    if (--twCd <= 0 && waveT > 200 && twisters.length < maxTw && !boss) { const dir = Math.random() < 0.5 ? 1 : -1; twisters.push({ x: dir > 0 ? -20 : W + 20, dir, spd: rnd(0.6, 1.0), t: 0 }); twCd = 520 + Math.random() * 420; }
+    if (--twCd <= 0 && waveT > 200 && twisters.length < maxTw && !boss) { const dir = Math.random() < 0.5 ? 1 : -1; twisters.push({ x: dir > 0 ? -20 : W + 20, dir, spd: rnd(0.6, 1.0), t: 0 }); twCd = (520 + Math.random() * 420) * hk(); }
   }
   for (const tw of twisters) {
     tw.t++; tw.x += tw.dir * tw.spd;
@@ -1728,7 +1763,7 @@ function updateHazards() {
     } else if (P.poison > 0) P.poison = Math.max(0, P.poison - 2);
   }
   // Amber Hive: honey drips
-  if (THEME === 'hive' && !boss && --dripCd <= 0 && waveT > 180) { dripCd = Math.max(70, 160 - (game.mode === 'endless' ? 5 : game.level) * 8); drips.push({ x: rnd(20, W - 20), y: 8, vy: 0, t: 50, ph: 'form' }); }
+  if (THEME === 'hive' && !boss && --dripCd <= 0 && waveT > 180) { dripCd = Math.max(60, 160 - (game.mode === 'endless' ? 5 : game.level) * 8) * hk(); drips.push({ x: rnd(20, W - 20), y: 8, vy: 0, t: 50, ph: 'form' }); }
   for (const d of drips) {
     if (d.ph === 'form') { if (--d.t <= 0) d.ph = 'fall'; continue; }
     d.vy = Math.min(d.vy + 0.18, 5); d.y += d.vy;
@@ -1750,7 +1785,7 @@ function updateHazards() {
     if (P.state === 'active' && P.invuln <= 0 && Math.hypot(wdx(P.x + 9, w.x), P.y + 12 - w.y) < 11) { hurtPlayer(w.x); w.x = (w.x + W / 2) % W; w.y = 40; w.vx = w.vy = 0; w.t = 0; }
   }
   // Starfall: meteor showers
-  if (THEME === 'cosmic' && !boss && --metCd <= 0 && waveT > 200) { metCd = Math.max(80, 190 - (game.mode === 'endless' ? 5 : game.level) * 9); meteors.push({ x: rnd(40, W - 40), y: -10, vx: rnd(-1.4, 1.4), vy: 0, t: 55, ph: 'warn' }); }
+  if (THEME === 'cosmic' && !boss && --metCd <= 0 && waveT > 200) { metCd = Math.max(70, 190 - (game.mode === 'endless' ? 5 : game.level) * 9) * hk(); meteors.push({ x: rnd(40, W - 40), y: -10, vx: rnd(-1.4, 1.4), vy: 0, t: 55, ph: 'warn' }); }
   for (const m of meteors) {
     if (m.ph === 'warn') { if (--m.t <= 0) { m.ph = 'fall'; m.vy = 3.6; SFX.orb(); } continue; }
     m.x = (m.x + m.vx + W) % W; m.y += m.vy; m.vy = Math.min(m.vy + 0.05, 6);
@@ -3091,7 +3126,8 @@ function drawHUD() {
   }
   pill(W / 2 - 40, 7, 80, 18);
   ctx.textAlign = 'center'; ctx.font = `800 9px ${FONT}`; ctx.fillStyle = '#ffe9a8';
-  ctx.fillText(game.mode === 'endless' ? 'WAVE ' + wave : `LEVEL ${game.realm + 1}-${game.level}`, W / 2, 16.5);
+  if (game.mode === 'campaign' && game.hard) ctx.fillStyle = '#ff8a9a';
+  ctx.fillText(game.mode === 'endless' ? 'WAVE ' + wave : `${game.hard ? 'NIGHTMARE' : 'LEVEL'} ${game.realm + 1}-${game.level}`, W / 2, 16.5);
   pill(W - 140, 7, 82, 18);
   if (IMG.gem) ctx.drawImage(IMG.gem, W - 134, 11, 12, 12 * IMG.gem.height / IMG.gem.width);
   else {
@@ -3171,6 +3207,11 @@ function render() {
   }
   if (!inGame) drawMenuDemo();
   if (THEME === 'spirit' && inGame) drawDarkness();
+  if (inGame && game.mode === 'campaign' && game.hard) {
+    const hv = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.9);
+    hv.addColorStop(0, 'rgba(120,0,20,0)'); hv.addColorStop(1, 'rgba(150,10,30,.38)');
+    ctx.fillStyle = hv; ctx.fillRect(0, 0, W, H);
+  }
   drawTexts();
   ctx.setTransform(K, 0, 0, K, 0, 0);
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * 0.04})`; ctx.fillRect(0, 0, W, H); }
@@ -3194,10 +3235,16 @@ function goTitle() {
   show('s-title');
 }
 function enterPlay() { game.state = 'play'; pointers.clear(); refreshTouch(); show(null); }
-function pauseGame() { if (game.state !== 'play') return; game.state = 'paused'; pointers.clear(); refreshTouch(); show('s-pause'); }
+function fillChallengeList(el, done) {
+  el.innerHTML = '';
+  if (game.mode !== 'campaign' || game.hard) return;
+  const mask = save.ch[`${game.realm}-${game.level}`] || 0;
+  challengesFor(game.realm, game.level).forEach((c, i) => { const li = document.createElement('li'); li.textContent = c.t; const got = (mask >> i) & 1; if (got || (done && done[i])) li.className = 'done' + (done && done[i] && !got ? ' new' : ''); el.appendChild(li); });
+}
+function pauseGame() { if (game.state !== 'play') return; fillChallengeList($('p-ch')); game.state = 'paused'; pointers.clear(); refreshTouch(); show('s-pause'); }
 function resumeGame() { game.state = 'play'; show(null); }
 
-let mapRealm = 0;
+let mapRealm = 0, mapHard = false;
 function openMap(r) {
   if (r !== undefined) mapRealm = r;
   game.state = 'menu'; P = null; boss = null; parts = []; texts = [];
@@ -3205,17 +3252,23 @@ function openMap(r) {
   const R = REALMS[mapRealm];
   $('realm-sub').textContent = R.sub + ' \u00B7 ' + R.foes.toUpperCase(); $('realm-name').textContent = R.name;
   $('b-realm-prev').disabled = mapRealm === 0; $('b-realm-next').disabled = mapRealm === REALMS.length - 1;
+  const canHard = !!save.stars[`${mapRealm}-10`];
+  if (!canHard) mapHard = false;
+  $('mode-tabs').querySelector('[data-mode=hard]').hidden = !canHard;
+  $('mode-tabs').querySelectorAll('.tab').forEach(t => t.classList.toggle('on', (t.dataset.mode === 'hard') === mapHard));
+  $('medals').textContent = `\u25C6 ${medalCount()} / ${REALMS.length * 30} medals`;
   const box = $('levels'); box.innerHTML = '';
   for (let l = 1; l <= 10; l++) {
     const b = document.createElement('button');
-    const st = save.stars[`${mapRealm}-${l}`] || 0, open = levelUnlocked(mapRealm, l);
-    b.className = 'lvl' + (l === 10 ? ' boss' : '') + (open ? '' : ' locked') + (st ? ' done' : '');
-    b.innerHTML = open ? `<span>${l === 10 ? 'BOSS' : l}</span><span class="st">${'<i>★</i>'.repeat(st)}${'☆'.repeat(3 - st)}</span>` : `<span class="lock"></span>`;
-    b.setAttribute('aria-label', open ? `Level ${l}, ${st} of 3 stars` : `Level ${l}, locked`);
-    if (open) b.onclick = () => startLevel(mapRealm, l); else b.disabled = true;
+    const key = `${mapRealm}-${l}`, st = (mapHard ? save.hstars[key] : save.stars[key]) || 0, open = mapHard ? hardUnlocked(mapRealm, l) : levelUnlocked(mapRealm, l);
+    const m = save.ch[key] || 0, md = mapHard ? '' : `<span class="md">${[0, 1, 2].map(i => (m >> i) & 1 ? '<i>\u25C6</i>' : '\u25C7').join('')}</span>`;
+    b.className = 'lvl' + (l === 10 ? ' boss' : '') + (mapHard ? ' hard' : '') + (open ? '' : ' locked') + (st ? ' done' : '');
+    b.innerHTML = open ? `<span>${l === 10 ? 'BOSS' : l}</span><span class="st">${'<i>★</i>'.repeat(st)}${'☆'.repeat(3 - st)}</span>${md}` : `<span class="lock"></span>`;
+    b.setAttribute('aria-label', open ? `${mapHard ? 'Nightmare level' : 'Level'} ${l}, ${st} of 3 stars` : `Level ${l}, locked`);
+    if (open) b.onclick = () => startLevel(mapRealm, l, mapHard); else b.disabled = true;
     box.appendChild(b);
   }
-  $('realm-hint').textContent = realmUnlocked(mapRealm) ? R.hint
+  $('realm-hint').textContent = mapHard ? 'Nightmare: tougher, faster foes, deadlier hazards, one fewer life, double gems.' : realmUnlocked(mapRealm) ? R.hint
     : `Locked. Defeat the ${REALMS[mapRealm - 1].bossTitle} in ${REALMS[mapRealm - 1].name} first.`;
   show('s-map');
 }
@@ -3248,7 +3301,7 @@ function previewCanvas(kind, id) {
 function openShop(tab) {
   if (tab) shopTab = tab;
   game.state = 'menu';
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === shopTab));
+  document.querySelectorAll('#s-shop .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === shopTab));
   const box = $('cards'); box.innerHTML = '';
   if (shopTab === 'up') { renderUpgrades(box); show('s-shop'); return; }
   if (shopTab === 'weapon') { renderWeapons(box); show('s-shop'); return; }
@@ -3331,24 +3384,32 @@ function resultButtons(list) {
 }
 function finishLevel(win) {
   game.state = 'result';
-  const r = game.realm, l = game.level, key = `${r}-${l}`;
+  const r = game.realm, l = game.level, key = `${r}-${l}`, hard = game.hard;
   const secs = waveT / 60, par = l === 10 ? 100 : 30 + enemyTotal * 7;
   const stars = win ? 1 + (deaths === 0 ? 1 : 0) + (secs <= par ? 1 : 0) : 0;
-  const earned = Math.round((runGems + (win ? 5 : 0) + stars * 10) * (1 + 0.1 * UP('gems')));
-  if (win) save.stars[key] = Math.max(save.stars[key] || 0, stars);
+  let chGems = 0; const chDone = [false, false, false];
+  if (win && !hard) {
+    const stats = { ...run, secs, gems: runGems };
+    const prev = save.ch[key] || 0; let mask = prev;
+    challengesFor(r, l).forEach((c, i) => { if (c.ok(stats)) { chDone[i] = true; if (!((prev >> i) & 1)) { mask |= 1 << i; chGems += 15; } } });
+    save.ch[key] = mask;
+  }
+  const earned = Math.round(((runGems + (win ? 5 : 0) + stars * 10) * (hard ? 2 : 1) + chGems) * (1 + 0.1 * UP('gems')));
+  if (win) { const tbl = hard ? save.hstars : save.stars; tbl[key] = Math.max(tbl[key] || 0, stars); }
   save.gems += earned; save.best = Math.max(save.best, score); runGems = 0; persist();
-  $('r-title').textContent = win ? (l === 10 ? 'Realm Conquered!' : 'Level Complete') : 'Out of Lives';
+  $('r-title').textContent = win ? (l === 10 ? (hard ? 'Nightmare Conquered!' : 'Realm Conquered!') : (hard ? 'Nightmare Cleared' : 'Level Complete')) : 'Out of Lives';
   const sEls = $('r-stars').children;
   for (let i = 0; i < 3; i++) sEls[i].className = '';
   $('r-stars').hidden = !win;
   if (win) for (let i = 0; i < stars; i++) setTimeout(() => { sEls[i].className = 'on'; SFX.star(i); }, 350 + i * 300);
   $('r-crit').textContent = win ? `★ Clear   ★ No deaths   ★ Under ${Math.round(par)}s` : 'Keep flapping, and hit them from above.';
   $('r-stats').innerHTML = `<dt>Score</dt><dd>${fmt(score)}</dd><dt>Time</dt><dd>${secs.toFixed(1)}s</dd><dt>Gems earned</dt><dd><span class="gem"></span> ${fmt(earned)}</dd>`;
+  fillChallengeList($('r-ch'), win ? chDone : null);
   const list = [];
-  if (win && l < 10) list.push(['Next', 'primary', () => startLevel(r, l + 1)]);
-  else if (win && l === 10 && r + 1 < REALMS.length) list.push([REALMS[r + 1].name, 'primary', () => openMap(r + 1)]);
-  list.push(['Retry', win ? '' : 'primary', () => startLevel(r, l)]);
-  list.push(['Map', '', () => openMap(r)]);
+  if (win && l < 10) list.push(['Next', 'primary', () => startLevel(r, l + 1, hard)]);
+  else if (win && l === 10 && !hard && r + 1 < REALMS.length) list.push([REALMS[r + 1].name, 'primary', () => openMap(r + 1)]);
+  list.push(['Retry', win ? '' : 'primary', () => startLevel(r, l, hard)]);
+  list.push(['Map', '', () => { mapHard = hard; openMap(r); }]);
   resultButtons(list);
   show('s-result');
 }
@@ -3360,6 +3421,7 @@ function finishEndless() {
   $('r-title').textContent = newBest ? 'New Best!' : 'Game Over';
   $('r-stars').hidden = true;
   $('r-crit').textContent = `Reached wave ${wave}`;
+  $('r-ch').innerHTML = '';
   $('r-stats').innerHTML = `<dt>Score</dt><dd>${fmt(score)}</dd><dt>Best</dt><dd>${fmt(save.best)}</dd><dt>Gems earned</dt><dd><span class="gem"></span> ${fmt(earned)}</dd>`;
   resultButtons([['Play Again', 'primary', startEndless], ['Menu', '', goTitle]]);
   show('s-result');
@@ -3371,11 +3433,12 @@ $('b-shop').onclick = () => openShop();
 $('b-sound').onclick = toggleSound;
 $('b-map-back').onclick = goTitle;
 $('b-shop-back').onclick = goTitle;
+document.querySelectorAll('#mode-tabs .tab').forEach(t => t.onclick = () => { mapHard = t.dataset.mode === 'hard'; openMap(); });
 $('b-realm-prev').onclick = () => openMap(Math.max(0, mapRealm - 1));
 $('b-realm-next').onclick = () => openMap(Math.min(REALMS.length - 1, mapRealm + 1));
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => openShop(t.dataset.tab));
+document.querySelectorAll('#s-shop .tab').forEach(t => t.onclick = () => openShop(t.dataset.tab));
 $('b-resume').onclick = resumeGame;
-$('b-restart').onclick = () => game.mode === 'endless' ? startEndless() : startLevel(game.realm, game.level);
+$('b-restart').onclick = () => game.mode === 'endless' ? startEndless() : startLevel(game.realm, game.level, game.hard);
 $('b-quit').onclick = () => game.mode === 'endless' ? goTitle() : openMap(game.realm);
 $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On');
 
@@ -3395,7 +3458,7 @@ resize();
 goTitle();
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>
