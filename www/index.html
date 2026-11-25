@@ -13,6 +13,7 @@
   html,body{color-scheme:dark;margin:0;height:100%;background:#05060f;overflow:hidden;touch-action:none;color:var(--ink);font-family:var(--font);
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
   #game{position:absolute;display:block}
+  #bgfill{position:fixed;inset:-24px;background:#05060f center/cover no-repeat;filter:blur(14px) brightness(.55) saturate(1.1);pointer-events:none}
   #touch{position:fixed;inset:0}
   .btn{position:fixed;display:flex;align-items:center;justify-content:center;pointer-events:none;
     border-radius:50%;border:1.5px solid rgba(255,255,255,.28);
@@ -164,6 +165,7 @@
 </style>
 </head>
 <body>
+<div id="bgfill" aria-hidden="true"></div>
 <canvas id="game"></canvas>
 <div id="rotate">Turn your phone sideways to play</div>
 <div id="touch" class="hide">
@@ -625,6 +627,7 @@ function layoutFor(r, l) {
 }
 function setRealm(i, lvl = 1) {
   realm = i; layout = lvl; const R = REALMS[i]; THEME = R.theme;
+  { const f = document.getElementById('bgfill'); if (f && f.dataset.t !== THEME) { f.dataset.t = THEME; f.style.backgroundImage = `url(assets/bg_${THEME}.jpg)`; } }
   const src = layoutFor(i, lvl);
   PLATS = src.map((p, j) => ({ ...p, h: p.shore ? SEA - p.y + 30 : 12, id: j + i * 20 + lvl * 100, ct: 0, gone: 0, bx: p.x, by: p.y, dx: 0, dy: 0 }));
   for (const p of PLATS) if (p.move) { const ph = p.move.ph || 0; p.x = p.bx + Math.sin(ph) * (p.move.ax || 0); p.y = p.by + Math.sin(ph) * (p.move.ay || 0); }
@@ -997,7 +1000,7 @@ function buildIsland(p) {
     g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = 1.2;
     for (const dx of [-8, 0, 8]) { g.beginPath(); g.moveTo(w / 2 + dx - 3, -4); g.lineTo(w / 2 + dx, -7); g.lineTo(w / 2 + dx + 3, -4); g.stroke(); }
   }
-  if (p.phase) { g.setLineDash([3, 3]); g.strokeStyle = 'rgba(120,150,210,.9)'; g.lineWidth = 0.8; rrect(g, 0.5, 0.5, w - 1, 8, 4); g.stroke(); g.setLineDash([]); }
+  if (p.phase) { g.strokeStyle = 'rgba(190,225,255,.6)'; g.lineWidth = 1; g.beginPath(); g.moveTo(3, 0.6); g.lineTo(w - 3, 0.6); g.stroke(); }
   if (p.move) {
     const cx = w / 2, cy = h * 0.5 + depth * 0.55;
     glow(g, cx, cy, 16, 'rgba(140,240,255,.7)');
@@ -1409,6 +1412,12 @@ function update() {
   if (game.state !== 'play') return;
   for (const e of enemies) updateEnemy(e);
   updateBoss();
+  if (boss && boss.type !== 'wyrm' && boss.type !== 'toad') { // bosses stay fully on screen: below the top bar, turning at the side edges
+    if (boss.y < 64) boss.y += (64 - boss.y) * 0.25;
+    const m = boss.w / 2 + 8;
+    if (boss.x < m) { boss.x = m; if (boss.vx < 0) boss.vx = -boss.vx; }
+    else if (boss.x > W - m) { boss.x = W - m; if (boss.vx > 0) boss.vx = -boss.vx; }
+  }
   collisions();
   updateCocoons();
   updatePickups();
@@ -1552,7 +1561,7 @@ function updateEnemy(e) {
     if (e.tier === 0 || !alive) a.ty = rnd(40, 270);
     else if (e.tier === 1) a.ty = P.y - 4 + rnd(-30, 30);
     else a.ty = P.y - 30 + rnd(-10, 10);
-    a.ty = clamp(a.ty, 24, 272);
+    a.ty = clamp(a.ty, 48, 272); // stay below the top bar
     const chase = [0.45, 0.72, 0.92][e.tier];
     a.dir = alive && Math.random() < chase ? Math.sign(wdx(e.x, P.x)) || 1 : (Math.random() < 0.5 ? -1 : 1);
   }
@@ -2781,6 +2790,7 @@ function drawBoss() {
       const warn = (b.ph === 'warn' || b.ph === 'charge');
       const gcol = { queen: 'rgba(255,200,60,.28)', moth: 'rgba(170,140,255,.3)', drake: 'rgba(140,180,255,.32)', scarab: 'rgba(255,200,80,.32)', jelly: 'rgba(150,220,255,.35)', wyrm: 'rgba(255,120,40,.35)', toad: 'rgba(150,255,90,.3)', mantis: 'rgba(255,200,80,.32)', spider: 'rgba(170,120,255,.35)', eclipse: 'rgba(200,150,255,.4)' }[b.type] || 'rgba(255,255,255,.2)';
       glow(ctx, 0, 0, 64, warn ? `rgba(255,60,90,${0.3 + 0.3 * Math.sin(frame * 0.6)})` : gcol);
+      if (!warn) { ctx.globalCompositeOperation = 'lighter'; glow(ctx, 0, 0, 46, gcol.replace(/[\d.]+\)$/, '0.22)')); ctx.globalCompositeOperation = 'source-over'; } // rim light so bosses stand out on dark skies
       const [hh, ay] = BOSS_SPR[b.type], ww = hh * bim.width / bim.height;
       const breathe = 1 + Math.sin(b.t * 0.15) * 0.03, sq = b.type === 'jelly' ? 1 - (b.sq || 0) * 0.15 : 1;
       ctx.scale(b.face * (b.type === 'jelly' ? 1 + (b.sq || 0) * 0.1 : 1), breathe * sq);
@@ -2906,18 +2916,18 @@ function drawDarkness() {
   if (!darkCv || darkCv.width !== cv.width || darkCv.height !== cv.height) { darkCv = document.createElement('canvas'); darkCv.width = cv.width; darkCv.height = cv.height; darkG = darkCv.getContext('2d'); }
   const g = darkG;
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, darkCv.width, darkCv.height);
-  g.fillStyle = 'rgba(4,0,18,0.86)'; g.fillRect(0, 0, darkCv.width, darkCv.height);
+  g.fillStyle = 'rgba(4,0,18,0.74)'; g.fillRect(0, 0, darkCv.width, darkCv.height);
   g.setTransform(K, 0, 0, K, 0, 0); g.globalCompositeOperation = 'destination-out';
   const hole = (x, y, r, a = 1) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(0.6, `rgba(0,0,0,${a * 0.7})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
-  if (P && P.state !== 'dead') hole(P.x + 9, P.y + 12, 118);
-  for (const e of enemies) hole(e.x + 9, e.y + 12, 28, 0.75);
+  if (P && P.state !== 'dead') hole(P.x + 9, P.y + 12, 140);
+  for (const e of enemies) hole(e.x + 9, e.y + 12, 42, 0.9);
   for (const c of cocoons) hole(c.x + 5, c.y + 6, 22, 0.8);
   for (const k of pickups) hole(k.x, k.y, 30);
   for (const s of pshots) hole(s.x, s.y, 22, 0.8);
   for (const s of shots) hole(s.x, s.y, 16, 0.8);
   for (const w of wisps) hole(w.x, w.y, 34, 0.85);
   for (const p of PLATS) if (!p.shore && p.w > 90) hole(p.x + p.w / 2, p.y - 6, 20, 0.35);
-  if (boss) hole(boss.x, boss.y, 64, 0.8);
+  if (boss) hole(boss.x, boss.y, 96, 0.9);
   g.globalCompositeOperation = 'source-over';
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(darkCv, 0, 0); ctx.restore();
 }
@@ -3117,10 +3127,18 @@ function drawSea(front) {
   ctx.lineTo(W, H); ctx.closePath();
   const g = ctx.createLinearGradient(0, SEA - 2, 0, H);
   g.addColorStop(0, sp.front[0]); g.addColorStop(0.5, sp.front[1]); g.addColorStop(1, sp.front[2]);
-  ctx.fillStyle = g; ctx.fill();
+  ctx.globalAlpha = 0.84; ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1; // a little see-through, so the painted water shows
   ctx.beginPath();
   for (let x = 0; x <= W; x += 8) x ? ctx.lineTo(x, wv(x)) : ctx.moveTo(x, wv(x));
+  ctx.save(); ctx.globalAlpha = 0.35; ctx.strokeStyle = sp.line; ctx.lineWidth = 3.2; ctx.stroke(); ctx.restore(); // soft glow under the crest
   ctx.strokeStyle = sp.line; ctx.lineWidth = THEME === 'ember' ? 1.4 : 1; ctx.stroke();
+  // moving light glints on the surface
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) {
+    const gx = (i * 41.3 + frame * (0.25 + (i % 3) * 0.12)) % (W + 40) - 20, gy = SEA + 4 + (i * 7) % 22, gw = 10 + (i % 4) * 5;
+    ctx.fillStyle = `rgba(${sp.mist},${0.16 + 0.1 * Math.sin(frame * 0.06 + i)})`; ctx.fillRect(gx, gy, gw, 1);
+  }
+  ctx.globalCompositeOperation = 'source-over';
   if (THEME === 'ember' && frame % 6 === 0) parts.push({ x: Math.random() * W, y: SEA + 2, vx: 0, vy: -rnd(0.3, 0.9), l: 30, L: 30, c: '#ffb347', s: 1.2, glow: true, g: 0.02 });
   const mist = ctx.createLinearGradient(0, SEA - 18, 0, SEA + 6);
   mist.addColorStop(0, `rgba(${sp.mist},0)`); mist.addColorStop(1, `rgba(${sp.mist},${0.12 + 0.04 * Math.sin(frame * 0.02)})`);
@@ -3220,7 +3238,16 @@ function drawPlatOverlay(p, ox, oy) {
     ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 1.2;
     for (const dx of [-8, 0, 8]) { ctx.beginPath(); ctx.moveTo(x + p.w / 2 + dx - 3, y - 5); ctx.lineTo(x + p.w / 2 + dx, y - 8); ctx.lineTo(x + p.w / 2 + dx + 3, y - 5); ctx.stroke(); }
   }
-  if (p.phase) { ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(90,120,190,.9)'; ctx.lineWidth = 0.9; rrect(ctx, x, y - 2, p.w, 9, 4); ctx.stroke(); ctx.setLineDash([]); }
+  if (p.phase) { // fading island: a soft magical shimmer along its top, with drifting sparkles
+    const k = p.fadeK ?? 1;
+    ctx.globalCompositeOperation = 'lighter';
+    glow(ctx, x + p.w / 2, y + 2, p.w * 0.45, `rgba(140,190,255,${0.2 * k})`);
+    const gl = ctx.createLinearGradient(x, 0, x + p.w, 0);
+    gl.addColorStop(0, 'rgba(160,210,255,0)'); gl.addColorStop(0.5, `rgba(205,232,255,${0.8 * k})`); gl.addColorStop(1, 'rgba(160,210,255,0)');
+    ctx.strokeStyle = gl; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x + 4, y); ctx.lineTo(x + p.w - 4, y); ctx.stroke();
+    for (let i = 0; i < 3; i++) { const sx = x + 4 + ((frame * 0.5 + i * p.w / 3 + p.id * 13) % (p.w - 8)); glow(ctx, sx, y - 1 - Math.sin(frame * 0.1 + i) * 1.5, 3.2, `rgba(225,242,255,${0.85 * k})`); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
 }
 function drawPlatforms() {
   const isl = IMG['island_' + THEME], shr = IMG['shore_' + THEME];

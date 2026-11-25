@@ -32,6 +32,13 @@ def generate(prompt, aspect):
             raw = base64.b64decode(d['data'][0].get('b64_json') or '')
             Image.open(io.BytesIO(raw)).verify()
             return raw
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode(errors='replace')
+            if 'spending cap' in detail or 'spend cap' in detail:
+                raise SystemExit('Gemini refused: the Google AI project has reached its monthly spending cap. '
+                                 'Raise it at https://ai.studio/spend, then run this again.')
+            print(f'  attempt {attempt + 1} failed: HTTP {e.code} {detail[:160]}')
+            time.sleep(15 * (attempt + 1))
         except Exception as e:
             print(f'  attempt {attempt + 1} failed: {e}')
             time.sleep(15 * (attempt + 1))

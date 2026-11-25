@@ -42,7 +42,7 @@ def measured_flags(p):
 RIDER_RUBRIC = """You are the art director of a cartoon arcade game where small knights ride giant insects and birds while jousting.
 Judge this single sprite (one rider on one mount, seen from the side, facing right). Be strict: this is what players see.
 Score each from 1 (terrible) to 10 (perfect):
-- riding: does the rider clearly SIT ASTRIDE the mount, hips on its back and legs down its side, like a jockey? (standing on it, floating above it, or sitting on its head/tail/wings scores low)
+- riding: does the rider clearly SIT ASTRIDE the mount, hips on its back and the near leg down its side, like a jockey? In a true side view only ONE leg is visible; if BOTH legs are visible on the viewer's side (side-saddle look), riding is at most 5 and say so. Standing on it, floating above it, or sitting on its head/tail/wings also scores low.
 - mount_visible: can you clearly recognise the mount and see most of its body, or does the rider hide it?
 - proportion: do the rider and mount sizes look right together (a mount big enough to carry the rider, not a tiny bug under a big knight)?
 - placement: is the rider placed on a sensible part of the body (back/thorax), not hanging off the front or back?
@@ -83,6 +83,12 @@ def ask(model, prompt, png_path, tries=4):
             txt = json.load(urllib.request.urlopen(req, timeout=180))['choices'][0]['message']['content']
             m = re.search(r'\{.*\}', txt, re.S)
             return json.loads(m.group(0))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode(errors='replace')
+            if 'spending cap' in detail or 'spend cap' in detail:
+                print('Gemini refused: the Google AI project has reached its monthly spending cap. Raise it at https://ai.studio/spend, '
+                      'or run with --no-ai for measurements only.'); os._exit(2)
+            err = f'HTTP {e.code}'; time.sleep(8 * (i + 1))
         except Exception as e:
             err = str(e)
             time.sleep(8 * (i + 1))

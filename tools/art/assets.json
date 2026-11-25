@@ -203,7 +203,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small heroic knight in polished silver plate armor with a flowing blue cape and a gold feather plume on the helmet, with a wooden lance with a steel tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small heroic knight in polished silver plate armor with a flowing blue cape and a gold feather plume on the helmet, with a wooden lance with a steel tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "rider_gold",
@@ -212,7 +212,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small heroic knight in shining gold plate armor with a flowing crimson cape and a white feather plume, with a wooden lance with a steel tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small heroic knight in shining gold plate armor with a flowing crimson cape and a white feather plume, with a wooden lance with a steel tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "rider_rose",
@@ -221,7 +221,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small heroic knight in blush pink and white plate armor with a flowing rose pink cape and a white plume, with a wooden lance with a steel tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small heroic knight in blush pink and white plate armor with a flowing rose pink cape and a white plume, with a wooden lance with a steel tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "rider_obsidian",
@@ -230,7 +230,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small heroic knight in glossy black obsidian armor with violet glowing trim, a flowing purple cape and a violet plume, with a dark lance with a steel tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small heroic knight in glossy black obsidian armor with violet glowing trim, a flowing purple cape and a violet plume, with a dark lance with a steel tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "enemy_scout",
@@ -239,7 +239,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small mischievous goblin-like warrior in green leaf-shaped armor with a horned helmet and glowing yellow-green eye slit and a short green cape, with a long lance with a pointed tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small mischievous goblin-like warrior in green leaf-shaped armor with a horned helmet and glowing yellow-green eye slit and a short green cape, with a long lance with a pointed tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "enemy_raider",
@@ -248,7 +248,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small fierce raider warrior in spiky dark crimson red armor (the armor itself is red, not white or silver) with a horned helmet, glowing orange eye slit and a tattered red cape, with a long lance with a pointed tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider."
+   "prompt": "A small fierce raider warrior in spiky dark crimson red armor (the armor itself is red, not white or silver) with a horned helmet, glowing orange eye slit and a tattered red cape, with a long lance with a pointed tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider."
   },
   {
    "id": "enemy_elite",
@@ -257,7 +257,7 @@
     120
    ],
    "style": "toon",
-   "prompt": "A small menacing elite dark knight in ornate deep purple armor with large curved horns, glowing violet eye slit and a royal purple cape, with a long lance with a pointed tip, shown exactly from the side, in a seated riding pose like a jockey on a horse: the rider's bottom rests on an invisible saddle, thighs horizontal pointing forward, knees bent at a right angle, lower legs hanging straight down with the feet below the knees. Upper body upright and leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. The legs are clearly bent in a sitting position: NOT standing, NOT straight legs. Full body, no mount, no animal, no saddle, nothing under the rider.",
+   "prompt": "A small menacing elite dark knight in ornate deep purple armor with large curved horns, glowing violet eye slit and a royal purple cape, with a long lance with a pointed tip, shown exactly from the side in profile, sitting astride an invisible horse like a jockey: hips resting on an invisible saddle, knee bent, lower leg hanging straight down. ONLY ONE LEG IS VISIBLE: the near leg, on the side facing the viewer. The far leg is completely hidden on the other side of the invisible mount, so you never see two legs. Upper body upright, leaning slightly forward, both hands gripping a long lance held level at chest height, pointing straight forward to the right. Full body, no mount, no animal, no saddle, nothing under the rider.",
    "bg": "bright green (#00FF00)"
   },
   {
