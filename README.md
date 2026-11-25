@@ -37,7 +37,7 @@ There is no bundler or build step for the game itself. Open `www/index.html` in 
 
 ## Build the Android APK
 
-Requirements: Node.js 18+, JDK 21, and the Android SDK (platform 35 and build-tools 35).
+Requirements: Node.js 18+, JDK 21, and the Android SDK (platform 36 and build-tools 36).
 
 1. Install the dependencies:
    ```bash
@@ -61,7 +61,7 @@ After editing `www/index.html`, run `npx cap sync android` (or `npm run apk` aga
 2. Allow installs from that source when Android asks.
 3. If Google Play Protect warns about an unknown app, choose **More details**, then **Install anyway**. Debug builds are signed with a temporary test key, which is why the warning appears.
 
-Android 6.0 or newer is required.
+Android 7.0 or newer is required.
 
 Debug APKs built on different machines use different signing keys, so Android refuses to install one over the other. Uninstall the old build first (this erases saved progress). A permanent release key, needed for the Play Store, removes this problem.
 
