@@ -355,13 +355,13 @@ let shopDirty = false;
 const SURF = { island_sea: 0.066, island_cave: 0.016, island_storm: 0.015, island_ember: 0.016, island_desert: 0.258, island_sky: 0.019,
   shore_sea: 0, shore_cave: 0.086, shore_storm: 0.005, shore_ember: 0.014, shore_desert: 0.009, shore_sky: 0.009,
   island_bog: 0.131, island_hive: 0.024, island_spirit: 0.205, island_cosmic: 0.055, shore_bog: 0.073, shore_hive: 0, shore_spirit: 0.023, shore_cosmic: 0.018 };
-const MOUNT_SPR = { dragonfly: { w: 34, wing: { n: 4, len: 18, wid: 5 } }, moth: { w: 27, wing: { moth: 1 } }, humming: { w: 28, wing: { n: 2, len: 15, wid: 4.4, buzz: 1 } },
-  beetle: { w: 25, wing: { n: 2, len: 16, wid: 5, fly: 1 } }, phoenix: { w: 30, wing: { n: 2, len: 18, wid: 6.5 } } };
-const INSECT_SPR = { wasp: { w: 27, wing: { n: 2, len: 13, wid: 5, buzz: 1 } }, firefly: { w: 29, wing: { n: 2, len: 15, wid: 5 } }, mosquito: { w: 31, wing: { n: 2, len: 14, wid: 3.6, buzz: 1 } },
-  beetle: { w: 27, wing: { n: 2, len: 16, wid: 5, fly: 1, warm: 1 } }, locust: { w: 28, wing: { n: 2, len: 18, wid: 4.4 } }, ladybug: { w: 22, wing: { n: 2, len: 16, wid: 5.4, fly: 1 } },
-  horsefly: { w: 28, wing: { n: 2, len: 15, wid: 5, buzz: 1 } }, bee: { w: 24, wing: { n: 2, len: 12, wid: 5, buzz: 1 } },
-  cicada: { w: 30, wing: { n: 2, len: 17, wid: 5, cA: 'rgba(160,220,255,.5)', cB: 'rgba(200,170,255,.2)' } },
-  butterfly: { w: 26, wing: { moth: 1, cA: 'rgba(170,120,255,.9)', cB: 'rgba(80,220,255,.8)' } } };
+const MOUNT_SPR = { dragonfly: { w: 40, seat: 0.7, back: 0.22, wing: { n: 4, len: 18, wid: 5 } }, moth: { w: 27, seat: 0.56, back: 0.16, wing: { moth: 1 } }, humming: { w: 28, seat: 0.55, back: 0.22, wing: { n: 2, len: 15, wid: 4.4, buzz: 1 } },
+  beetle: { w: 25, seat: 0.5, back: 0.16, wing: { n: 2, len: 16, wid: 5, fly: 1 } }, phoenix: { w: 30, seat: 0.56, back: 0.3, wing: { n: 2, len: 18, wid: 6.5 } } };
+const INSECT_SPR = { wasp: { w: 27, seat: 0.56, back: 0.22, wing: { n: 2, len: 13, wid: 5, buzz: 1 } }, firefly: { w: 29, seat: 0.56, back: 0.18, wing: { n: 2, len: 15, wid: 5 } }, mosquito: { w: 34, seat: 0.56, back: 0.32, wing: { n: 2, len: 14, wid: 3.6, buzz: 1 } },
+  beetle: { w: 27, seat: 0.5, back: 0.16, wing: { n: 2, len: 16, wid: 5, fly: 1, warm: 1 } }, locust: { w: 28, seat: 0.56, back: 0.22, wing: { n: 2, len: 18, wid: 4.4 } }, ladybug: { w: 26, seat: 0.5, back: 0.12, wing: { n: 2, len: 16, wid: 5.4, fly: 1 } },
+  horsefly: { w: 28, seat: 0.56, back: 0.22, wing: { n: 2, len: 15, wid: 5, buzz: 1 } }, bee: { w: 28, seat: 0.5, back: 0.16, wing: { n: 2, len: 12, wid: 5, buzz: 1 } },
+  cicada: { w: 30, seat: 0.56, back: 0.22, wing: { n: 2, len: 17, wid: 5, cA: 'rgba(160,220,255,.5)', cB: 'rgba(200,170,255,.2)' } },
+  butterfly: { w: 30, seat: 0.56, back: 0.36, wing: { moth: 1, cA: 'rgba(170,120,255,.9)', cB: 'rgba(80,220,255,.8)' } } };
 const BOSS_SPR = { queen: [66, 0.5], moth: [82, 0.5], drake: [80, 0.5], scarab: [62, 0.55], jelly: [92, 0.28], wyrm: [130, 0.15], toad: [66, 0.6], mantis: [80, 0.5], spider: [68, 0.5], eclipse: [90, 0.5] };
 
 // ---------- catalog ----------
@@ -2605,22 +2605,28 @@ function drawSpriteWings(g, ws, rx, ry, pal, r, front) {
   if (front) { drawWing(g, rx, ry, ws.len, ws.wid, a, cA, cB); if (ws.n === 4) drawWing(g, rx - 3, ry, ws.len - 2, ws.wid * 0.92, a - 0.12, cA, cB); }
   else { drawWing(g, rx - 2, ry + 0.5, ws.len - 1, ws.wid * 0.9, a + 0.28, 'rgba(200,220,255,.3)', 'rgba(255,255,255,.1)'); if (ws.n === 4) drawWing(g, rx + 1, ry + 0.5, ws.len, ws.wid, a + 0.18, 'rgba(200,220,255,.3)', 'rgba(255,255,255,.1)'); }
 }
+// Mounts are drawn about a third larger than before so the rider looks like they're riding a steed, not perching on a bug.
+// Each mount says where its saddle is: seat = fraction of its width from the tail end, back = fraction of its height from the top.
+const MOUNT_SCALE = 1.18, MOUNT_MAXH = 18.5;
 function drawMountSprite(g, id, spec, pal, r) {
   const im = IMG[id];
   if (!im || !spec) return null;
-  const ratio = im.height / im.width, h = Math.min(spec.w * ratio, 15), w = h / ratio, top = 23.5 - h, ry = top + Math.min(4, h * 0.3);
+  const ratio = im.height / im.width, h = Math.min(spec.w * MOUNT_SCALE * ratio, MOUNT_MAXH), w = h / ratio, top = 24 - h, ry = top + Math.min(5, h * 0.3);
+  const bob = r.onGround ? 0 : Math.sin(frame * 0.2 + (r.anim || 0)) * 0.4, x0 = -2 - w * 0.5;
   drawSpriteWings(g, spec.wing, 1, ry, pal, r, false);
-  const bob = r.onGround ? 0 : Math.sin(frame * 0.2 + (r.anim || 0)) * 0.4;
-  g.drawImage(im, -2 - w * 0.5, top + bob, w, h);
+  g.drawImage(im, x0, top + bob, w, h);
   drawSpriteWings(g, spec.wing, 1, ry, pal, r, true);
-  return top;
+  return { x: x0 + w * (spec.seat ?? 0.55), y: top + bob + h * (spec.back ?? 0.3) };
 }
-function drawRiderSprite(g, id, mountTop, standing, lanceBoost) {
+// The rider sprite is a seated pose: its hips sit at (hipX, hipY) of the image, legs hang below.
+const RIDER_HIP = { x: 0.40, y: 0.64 };
+function drawRiderSprite(g, id, seat, standing, lanceBoost) {
   const im = IMG[id];
   if (!im) return false;
-  const h = standing ? 22 : 20, w = h * im.width / im.height, bottom = standing ? 24 : mountTop + 7.5, left = -w * 0.38;
-  g.drawImage(im, left, bottom - h, w, h);
-  if (lanceBoost) glow(g, left + w + 1, bottom - h * 0.3, 10, 'rgba(255,220,90,.95)', 0.9);
+  const h = standing ? 22 : 22.5, w = h * im.width / im.height;
+  const left = standing ? -w * 0.38 : seat.x - w * RIDER_HIP.x, topY = standing ? 24 - h : seat.y - h * RIDER_HIP.y;
+  g.drawImage(im, left, topY, w, h);
+  if (lanceBoost) glow(g, left + w + 1, topY + h * 0.55, 10, 'rgba(255,220,90,.95)', 0.9);
   return true;
 }
 function drawRiderSpriteFull(g, r, pal, mountId) {
@@ -2633,8 +2639,8 @@ function drawRiderSpriteFull(g, r, pal, mountId) {
   if (!IMG[mid] || !spec) return false;
   glow(g, 0, 13, 16, isP ? 'rgba(90,220,255,.18)' : 'rgba(255,120,80,.10)');
   g.save(); g.translate(0, 24); g.scale(1.25, 1.25); g.translate(0, -24);
-  const top = drawMountSprite(g, mid, spec, pal, r);
-  drawRiderSprite(g, riderId, top, false, isP && r.pw && r.pw.lance > 0);
+  const seat = drawMountSprite(g, mid, spec, pal, r);
+  drawRiderSprite(g, riderId, seat, false, isP && r.pw && r.pw.lance > 0);
   g.restore();
   return true;
 }
