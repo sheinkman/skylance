@@ -16,3 +16,4 @@ keystore.properties
 .env.*
 
 tools/qa/out/
+tools/judge/out/

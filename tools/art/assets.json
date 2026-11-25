@@ -322,7 +322,8 @@
     90
    ],
    "style": "bug",
-   "prompt": "The body of a firefly beetle: dark brown wing covers closed, a red and black head shield, short antennae, and a large brightly glowing yellow-green lantern abdomen at the back left. NO open wings. Full body."
+   "prompt": "The body of a firefly beetle: dark brown wing covers closed, a red and black head shield, short antennae, and a large brightly glowing yellow-green lantern abdomen at the back left. NO open wings. Full body.",
+   "holes": true
   },
   {
    "id": "insect_mosquito",
@@ -349,7 +350,8 @@
     90
    ],
    "style": "bug",
-   "prompt": "The body of a desert locust: olive green and sandy brown segmented body extending back to the left, large folded powerful hind legs, big brown eyes, long antennae. Wings folded flat along the back. Full body."
+   "prompt": "The body of a desert locust: olive green and sandy brown segmented body extending back to the left, large folded powerful hind legs, big brown eyes, long antennae. Wings folded flat along the back. Full body.",
+   "holes": true
   },
   {
    "id": "insect_ladybug",
@@ -644,7 +646,8 @@
     90
    ],
    "style": "bug",
-   "prompt": "The slim body of a cosmic butterfly: a dark slender body sparkling with tiny stars, long curled antennae, glowing violet eyes, thin legs. NO wings at all. Full body."
+   "prompt": "The body of a giant cosmic butterfly, big enough to be ridden: a plump, fuzzy, rounded thorax and a thick segmented abdomen in bright violet and cyan with glowing star speckles, a round head with large glowing violet eyes, short curled antennae, six legs tucked under. The body is wide and sturdy, bright and well lit against the background. NO wings at all. Full body, horizontal.",
+   "holes": true
   },
   {
    "id": "boss_toad",
