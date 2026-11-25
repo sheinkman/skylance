@@ -98,6 +98,15 @@
   .card.eq{border-color:rgba(127,233,255,.7);box-shadow:0 0 0 1px rgba(127,233,255,.35),0 0 18px rgba(127,233,255,.18)}
   .card canvas{width:100%;aspect-ratio:3/2;border-radius:10px;background:radial-gradient(ellipse at center,#25205a,#0d0b26)}
   .card b{font-size:13px}
+  .tab.gems-tab{border-color:rgba(255,215,106,.55);color:#ffe28a}
+  #age-year{font:inherit;font-size:16px;font-weight:700;padding:10px 14px;border-radius:12px;background:#151a3e;color:#fff;border:1px solid var(--edge);min-width:200px}
+  .legal{position:absolute;bottom:calc(8px + env(safe-area-inset-bottom));right:max(14px, env(safe-area-inset-right, 0px));font-size:11px;color:rgba(200,210,240,.55)}
+  .card .amt{font-size:15px;font-weight:800;color:#9fe8ff;display:flex;align-items:center;gap:5px}
+  .card .ribbon{position:absolute;top:12px;left:12px;font-size:10px;font-weight:800;color:#1a1200;background:var(--gold);border-radius:6px;padding:1px 6px}
+  .card{position:relative}
+  #cards.gemgrid canvas{aspect-ratio:2/1}
+  #cards.gemgrid p{min-height:0}
+  .shop-note{grid-column:1/-1;margin:2px 0 0;color:var(--muted);font-size:11px;text-align:center}
   .card p{margin:0;color:var(--muted);font-size:11px;min-height:2.4em}
   .card .ui-btn{min-width:0;padding:7px 8px;font-size:12px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px}
 
@@ -168,6 +177,7 @@
     <button class="ui-btn" id="b-shop">Hangar</button>
   </div>
   <p class="hint" id="title-hint"></p>
+  <a class="legal" id="l-privacy" href="#" target="_blank" rel="noopener">Privacy policy</a>
 </section>
 
 <section id="s-map" class="screen dim" hidden>
@@ -185,7 +195,7 @@
 <section id="s-shop" class="screen dim" hidden>
   <div class="topbar"><button class="ui-btn small" id="b-shop-back">Back</button><h2>Hangar</h2><span class="gems"><span class="gem"></span><span id="g-shop">0</span></span></div>
   <div class="tabs" role="tablist">
-    <button class="tab on" data-tab="mount">Mounts</button><button class="tab" data-tab="trail">Trails</button><button class="tab" data-tab="armor">Armor</button><button class="tab" data-tab="weapon">Weapons</button><button class="tab" data-tab="up">Upgrades</button>
+    <button class="tab on" data-tab="mount">Mounts</button><button class="tab" data-tab="trail">Trails</button><button class="tab" data-tab="armor">Armor</button><button class="tab" data-tab="weapon">Weapons</button><button class="tab" data-tab="up">Upgrades</button><button class="tab gems-tab" data-tab="gems">Gems</button>
   </div>
   <div class="cards" id="cards"></div>
 </section>
@@ -193,6 +203,15 @@
 <section id="s-arena" class="screen dim" hidden>
   <div class="topbar"><button class="ui-btn small" id="b-arena-back">Back</button><h2>Arena</h2><span class="gems"><span class="gem"></span><span id="g-arena">0</span></span></div>
   <div class="cards arena-cards" id="arena-cards"></div>
+</section>
+
+<section id="s-age" class="screen dim" hidden>
+  <div class="panel">
+    <h2>Welcome to Skylance</h2>
+    <p class="tag">Before you start, what year were you born?</p>
+    <select id="age-year" aria-label="Year of birth"><option value="">Choose a year</option></select>
+    <button class="ui-btn primary" id="b-age-ok" disabled>Continue</button>
+  </div>
 </section>
 
 <section id="s-challenge" class="screen dim" hidden>
@@ -621,10 +640,14 @@ function loadSave(d) {
   save.firstSeen = num(d.firstSeen, 1e15) || Date.now();
   save.refCount = num(d.refCount, 1e6);
   for (const k of ['reg', 'refDone', 'refChecked']) save[k] = d[k] === true;
+  if (['child', 'teen', 'adult'].includes(d.ageGroup)) save.ageGroup = d.ageGroup;
+  if (d.vids && typeof d.vids === 'object' && /^\d{4}-\d\d-\d\d$/.test(d.vids.day)) save.vids = { day: d.vids.day, n: num(d.vids.n, VIDEOS_PER_DAY_MAX) };
+  save.applied = Array.isArray(d.applied) ? d.applied.filter(x => typeof x === 'string' && /^[0-9a-f]{16}$/.test(x)).slice(-40) : [];
 }
 const SAVE_KEY = 'skylance.save.v1';
 const DEF_OWNED = { mount: ['dragonfly'], trail: ['azure'], armor: ['silver'], weapon: ['darts'] }, DEF_EQ = { mount: 'dragonfly', trail: 'azure', armor: 'silver', weapon: 'darts' };
-const save = { gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, best2: {}, muted: false };
+const VIDEOS_PER_DAY_MAX = 50;
+const save = { applied: [], gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, best2: {}, muted: false };
 try {
   const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
   if (d && typeof d === 'object') loadSave(d);
@@ -3315,7 +3338,7 @@ function render() {
 // ====================================================================
 //  MENUS
 // ====================================================================
-const SCREENS = ['s-title', 's-map', 's-shop', 's-arena', 's-challenge', 's-result', 's-pause'];
+const SCREENS = ['s-age', 's-title', 's-map', 's-shop', 's-arena', 's-challenge', 's-result', 's-pause'];
 function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; syncTouchUI(); refreshGems(); }
 function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop', 'g-arena']) $(id).textContent = fmt(save.gems); }
 function toggleSound() { save.muted = !save.muted; persist(); $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On'); }
@@ -3371,9 +3394,10 @@ function noteInviter(code) {
   if (code && /^[a-z0-9]{6}$/.test(code) && code !== save.refCode && !save.invitedBy && !save.refDone && newPlayer()) { save.invitedBy = code; persist(); refSync(); }
 }
 function grantFounder() { if (!save.owned.trail.includes('founder')) save.owned.trail.push('founder'); }
-let refBusy = false;
-async function refSync() {
-  if (refBusy) return; refBusy = true;
+let refPromise = null;
+function refSync() { return refPromise || (refPromise = refSyncRun().finally(() => { refPromise = null; })); }
+async function refSyncRun() {
+  {
   try {
     if (!save.reg) {
       for (let i = 0; i < 3 && !save.reg; i++) {
@@ -3397,7 +3421,8 @@ async function refSync() {
       save.gems += REF_GEMS_INVITER * n; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
       toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(REF_GEMS_INVITER * n)} gems`); SFX.up(); buzz('medium');
     }
-  } finally { refBusy = false; }
+  } catch (e) { }
+  }
 }
 async function checkInstallReferrer() {
   if (!IS_APP || save.refChecked) return;
@@ -3421,7 +3446,175 @@ async function shareInvite() {
   try { await navigator.clipboard.writeText(`${text} ${link}`); toast('Invite link copied. Send it to a friend!'); }
   catch (e) { toast(link); }
 }
-function checkChallengeLink(url) { const ch = parseChallenge(url); if (ch) openChallenge(ch); return !!ch; }
+// ---------- monetization: age check, rewarded videos, gem packs ----------
+// Google's public TEST ids. Replace AD_REWARD_ID with your own rewarded ad unit and set AD_TEST = false before release.
+const AD_TEST = true, AD_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
+const PRIVACY_URL = 'https://claude.ai/artifact/QBBvPTK3PFijCaoPGZkYQ4';
+const VIDEO_GEMS = 40, VIDEOS_PER_DAY = 5;
+const PACKS = [
+  { id: 'gems_300', gems: 300, name: 'Pouch of Gems', n: 3 },
+  { id: 'gems_1000', gems: 1000, name: 'Satchel of Gems', n: 6, tag: '+11% bonus' },
+  { id: 'gems_2200', gems: 2200, name: 'Chest of Gems', n: 10, tag: '+22% bonus' },
+  { id: 'gems_5000', gems: 5000, name: 'Dragon Hoard', n: 16, tag: 'Best value' },
+];
+const plug = n => window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[n];
+const MON = { adsInit: false, adReady: false, adLoading: false, adShowing: false, prices: {}, billing: false, busy: false };
+const today = () => new Date().toISOString().slice(0, 10);
+const videosLeft = () => VIDEOS_PER_DAY - (save.vids && save.vids.day === today() ? save.vids.n : 0);
+
+// Neutral age question (Google Play Families policy). Only the age group is kept, never the birth year.
+function needAgeCheck() { return IS_APP && !save.ageGroup; }
+function openAgeCheck(then) {
+  const sel = $('age-year'), y = new Date().getFullYear();
+  if (sel.options.length < 3) for (let i = y; i >= y - 100; i--) sel.add(new Option(String(i), String(i)));
+  sel.value = ''; $('b-age-ok').disabled = true;
+  sel.onchange = () => $('b-age-ok').disabled = !sel.value;
+  $('b-age-ok').onclick = () => {
+    const age = y - +sel.value - 1; // assume the birthday has not happened yet this year (the safer side)
+    save.ageGroup = age < 13 ? 'child' : age < 16 ? 'teen' : 'adult'; persist();
+    monInit(); then();
+    if (linkAfterAge) { openChallenge(linkAfterAge); linkAfterAge = null; }
+  };
+  show('s-age');
+}
+
+async function adsInit() {
+  const A = plug('AdMob');
+  if (!IS_APP || !A || !save.ageGroup || MON.adsInit) return;
+  const child = save.ageGroup === 'child', minor = save.ageGroup !== 'adult';
+  try {
+    if (!child) {
+      const ci = await A.requestConsentInfo({ tagForUnderAgeOfConsent: minor });
+      if (ci.isConsentFormAvailable && ci.status === 'REQUIRED') await A.showConsentForm();
+    }
+    await A.initialize({ initializeForTesting: AD_TEST, tagForChildDirectedTreatment: child, tagForUnderAgeOfConsent: minor, maxAdContentRating: child ? 'General' : 'ParentalGuidance' });
+    MON.adsInit = true;
+    A.addListener('onRewardedVideoAdDismissed', () => { MON.adShowing = false; adLoad(); });
+    A.addListener('onRewardedVideoAdFailedToShow', () => { MON.adShowing = false; adLoad(); });
+    adLoad();
+  } catch (e) { }
+}
+async function adLoad() {
+  const A = plug('AdMob');
+  if (!MON.adsInit || MON.adReady || MON.adLoading || videosLeft() <= 0) return;
+  MON.adLoading = true;
+  try { await A.prepareRewardVideoAd({ adId: AD_REWARD_ID, isTesting: AD_TEST, immersiveMode: true }); MON.adReady = true; }
+  catch (e) { setTimeout(adLoad, 60000); }
+  finally { MON.adLoading = false; if (shopTab === 'gems' && !$('s-shop').hidden) openShop(); }
+}
+async function watchVideo() {
+  const A = plug('AdMob');
+  if (!MON.adReady || MON.adShowing || videosLeft() <= 0) return;
+  MON.adReady = false; MON.adShowing = true;
+  try {
+    const r = await A.showRewardVideoAd();
+    if (r) {
+      if (!save.vids || save.vids.day !== today()) save.vids = { day: today(), n: 0 };
+      save.vids.n++; save.gems += VIDEO_GEMS; persist(); refreshGems();
+      SFX.up(); buzz('medium'); toast(`+${VIDEO_GEMS} gems. Thanks for watching!`);
+    }
+  } catch (e) { toast('The video could not play. Try again in a minute.'); }
+  MON.adShowing = false; openShop(); adLoad();
+}
+
+async function digest(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b).slice(0, 8)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function verifyPurchase(p) {
+  const B = plug('PlayBilling'), product = p.products && p.products[0];
+  if (!PACKS.some(k => k.id === product)) return;
+  if (!save.reg) { await refSync(); if (!save.reg) return; }
+  let res = null;
+  try {
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 15000);
+    const r = await fetch(`${SUPA_URL}/functions/v1/verify-purchase`, { method: 'POST', signal: ctl.signal, headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ code: save.refCode, secret: save.refSecret, product, token: p.token }) });
+    clearTimeout(tm); res = await r.json();
+  } catch (e) { toast('Could not reach the server. Your purchase is safe and will finish next time.'); return; }
+  if (res && res.ok === true) {
+    const gems = Math.min(50000, Math.floor(+res.gems) || 0), d = await digest(p.token);
+    if (!save.applied.includes(d)) {
+      save.applied = [...save.applied, d].slice(-40); save.gems += gems; persist(); refreshGems();
+      SFX.win(); buzz('heavy'); toast(`+${fmt(gems)} gems added. Thank you!`);
+    }
+    try { await B.consume({ token: p.token }); } catch (e) { }
+    if (!$('s-shop').hidden) openShop();
+  } else if (res && res.error === 'pending') toast('Your payment is pending. Gems arrive once it completes.');
+  else if (res && res.error === 'not_configured') toast('Gem packs are not switched on yet.');
+  else toast('That purchase could not be verified.');
+}
+async function handlePurchases(list) {
+  for (const p of list || []) {
+    if (p.state === 'pending') toast('Your payment is pending. Gems arrive once it completes.');
+    else if (p.state === 'purchased') await verifyPurchase(p);
+  }
+}
+async function billingInit() {
+  const B = plug('PlayBilling');
+  if (!IS_APP || !B || MON.billing) return;
+  MON.billing = true;
+  B.addListener('purchasesUpdated', e => {
+    MON.busy = false;
+    if (e.code === 0) handlePurchases(e.purchases);
+    else if (e.code !== 1) toast('The purchase did not go through.');
+    if (!$('s-shop').hidden) openShop();
+  });
+  try { const r = await B.getProducts({ ids: PACKS.map(k => k.id) }); for (const k of r.products || []) MON.prices[k.id] = String(k.price).slice(0, 20); } catch (e) { }
+  if (!$('s-shop').hidden && shopTab === 'gems') openShop();
+  await refSync();
+  try { const q = await B.queryPurchases(); await handlePurchases(q.purchases); } catch (e) { }
+}
+async function buyPack(id) {
+  const B = plug('PlayBilling');
+  if (!B || MON.busy) return;
+  if (!save.reg) { await refSync(); if (!save.reg) { toast('Connect to the internet to buy gems.'); return; } }
+  MON.busy = true;
+  try { const r = await B.purchase({ id, accountId: save.refCode }); if (r.code !== 0) MON.busy = false; if (r.code === 7) toast('You already have a purchase finishing. Please wait a moment.'); }
+  catch (e) { MON.busy = false; toast('The store is not available right now.'); }
+}
+function monInit() { if (!IS_APP || !save.ageGroup) return; adsInit(); billingInit(); }
+
+function previewGems(n) {
+  const k = Math.min(window.devicePixelRatio || 1, 2), [c, g] = mk(150, 100, k), im = IMG.gem;
+  let seed = n * 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const pts = Array.from({ length: n }, (_, i) => ({ x: 75 + (rnd() - 0.5) * Math.min(110, 30 + n * 6), y: 78 - Math.floor(i / 4) * 9 - rnd() * 8 })).sort((a, b) => b.y - a.y);
+  glow(g, 75, 62, 46 + n, 'rgba(120,235,255,.35)');
+  for (const p of pts) { if (im) g.drawImage(im, p.x - 13, p.y - 13, 26, 26); else { g.fillStyle = '#7fe7ff'; g.beginPath(); g.moveTo(p.x, p.y - 10); g.lineTo(p.x + 8, p.y); g.lineTo(p.x, p.y + 10); g.lineTo(p.x - 8, p.y); g.fill(); } }
+  return c;
+}
+function previewVideo() {
+  const k = Math.min(window.devicePixelRatio || 1, 2), [c, g] = mk(150, 100, k);
+  glow(g, 75, 50, 40, 'rgba(255,215,106,.35)');
+  g.fillStyle = 'rgba(255,255,255,.12)'; g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 2;
+  g.beginPath(); g.roundRect(40, 28, 70, 44, 8); g.fill(); g.stroke();
+  g.fillStyle = '#ffd76a'; g.beginPath(); g.moveTo(68, 39); g.lineTo(86, 50); g.lineTo(68, 61); g.closePath(); g.fill();
+  return c;
+}
+function renderGems(box) {
+  if (!IS_APP) {
+    box.insertAdjacentHTML('beforeend', '<p class="shop-note">Gem packs and free gem videos are available in the Android app.</p>');
+    return;
+  }
+  const mkCard = (cv, title, amt, desc, btnText, cls, fn, dis, tag) => {
+    const card = document.createElement('div'); card.className = 'card';
+    card.appendChild(cv);
+    if (tag) { const t = document.createElement('span'); t.className = 'ribbon'; t.textContent = tag; card.appendChild(t); }
+    const b = document.createElement('b'); b.textContent = title; card.appendChild(b);
+    const a = document.createElement('span'); a.className = 'amt'; a.innerHTML = '<span class="gem"></span>'; a.append(' ' + amt); card.appendChild(a);
+    if (desc) { const p = document.createElement('p'); p.textContent = desc; card.appendChild(p); }
+    const btn = document.createElement('button'); btn.className = 'ui-btn ' + cls; btn.textContent = btnText;
+    if (dis) btn.disabled = true; else btn.onclick = fn;
+    card.appendChild(btn); box.appendChild(card);
+  };
+  const left = videosLeft();
+  mkCard(previewVideo(), 'Free gems', fmt(VIDEO_GEMS), left > 0 ? `Watch a short video. ${left} left today.` : 'Come back tomorrow for more.',
+    left <= 0 ? 'Done for today' : MON.adReady ? 'Watch video' : 'Loading video…', 'primary', watchVideo, left <= 0 || !MON.adReady || MON.adShowing);
+  for (const k of PACKS) {
+    const price = MON.prices[k.id];
+    mkCard(previewGems(k.n), k.name, fmt(k.gems), price ? '' : 'Store prices are loading.', price || '…', '', () => buyPack(k.id), !price || MON.busy, k.tag);
+  }
+  box.insertAdjacentHTML('beforeend', '<p class="shop-note">Gem packs cost real money. If you are under 18, ask a parent before buying. Videos are optional.</p>');
+}
+let linkAfterAge = null;
+function checkChallengeLink(url) { const ch = parseChallenge(url); if (ch && needAgeCheck()) linkAfterAge = ch; else if (ch) openChallenge(ch); return !!ch; }
 function goTitle() {
   game.state = 'menu'; if (realm !== 0 || layout !== 1) setRealm(0);
   P = null; enemies = []; parts = []; texts = []; boss = null;
@@ -3497,8 +3690,10 @@ function openShop(tab) {
   game.state = 'menu';
   document.querySelectorAll('#s-shop .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === shopTab));
   const box = $('cards'); box.innerHTML = '';
+  box.classList.toggle('gemgrid', shopTab === 'gems');
   if (shopTab === 'up') { renderUpgrades(box); show('s-shop'); return; }
   if (shopTab === 'weapon') { renderWeapons(box); show('s-shop'); return; }
+  if (shopTab === 'gems') { renderGems(box); show('s-shop'); return; }
   const cat = CATALOG[shopTab];
   for (const id of Object.keys(cat)) {
     const it = cat[id], owned = save.owned[shopTab].includes(id), eq = save.eq[shopTab] === id;
@@ -3703,7 +3898,8 @@ function loop(t) {
 }
 setRealm(0);
 resize();
-goTitle();
+$('l-privacy').href = PRIVACY_URL;
+if (needAgeCheck()) openAgeCheck(goTitle); else { goTitle(); monInit(); }
 if (!checkChallengeLink(location.hash)) {
   const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (AppP && AppP.getLaunchUrl) AppP.getLaunchUrl().then(r => r && r.url && checkChallengeLink(r.url)).catch(() => { });
@@ -3716,7 +3912,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refS
   if (AppP && AppP.addListener) AppP.addListener('appUrlOpen', e => { if (game.state !== 'play') checkChallengeLink(e.url); }); }
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, refSync, shareInvite, noteInviter, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, refSync, MON, renderGems, verifyPurchase, openAgeCheck, shareInvite, noteInviter, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>

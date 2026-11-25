@@ -4,6 +4,8 @@ android {
     namespace = "com.skylance.game"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
+        // AdMob app ID. This is Google's public TEST id; replace it with your own from the AdMob console before release.
+        manifestPlaceholders = [admobAppId: "ca-app-pub-3940256099942544~3347511713"]
         applicationId "com.skylance.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -37,6 +39,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     implementation "com.android.installreferrer:installreferrer:2.2"
+    implementation "com.android.billingclient:billing:8.3.0"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
