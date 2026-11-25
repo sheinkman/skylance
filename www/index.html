@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://znipfvuysadwnucczjtm.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#070a22">
 <title>Skylance</title>
@@ -594,12 +596,38 @@ function setRealm(i, lvl = 1) {
 }
 
 // ---------- save ----------
+// Saved data is untrusted (it can be edited or corrupted): copy only known fields, with checked types and ranges.
+function loadSave(d) {
+  const num = (v, max) => Number.isFinite(+v) ? Math.max(0, Math.min(max, Math.floor(+v))) : 0;
+  const map = (o, keyRe, max) => { const r = Object.create(null); if (o && typeof o === 'object') for (const k of Object.keys(o)) if (keyRe.test(k)) r[k] = num(o[k], max); return r; };
+  const lvlKey = /^\d{1,2}-\d{1,2}$/;
+  save.gems = num(d.gems, 1e9); save.best = num(d.best, 1e10); save.muted = d.muted === true;
+  save.stars = map(d.stars, lvlKey, 3); save.hstars = map(d.hstars, lvlKey, 3); save.ch = map(d.ch, lvlKey, 7);
+  save.up = map(d.up, /^[a-z]{1,16}$/, 10); save.wlv = map(d.wlv, /^[a-z]{1,16}$/, 3);
+  save.best2 = Object.create(null);
+  if (d.best2 && typeof d.best2 === 'object') for (const k of Object.keys(d.best2)) if (/^(rush|g\d{1,2})$/.test(k) && d.best2[k] && typeof d.best2[k] === 'object') save.best2[k] = { score: num(d.best2[k].score, 1e10), cleared: num(d.best2[k].cleared, 100) };
+  const cats = { mount: MOUNTS, trail: TRAILS, armor: ARMORS, weapon: WEAPONS };
+  save.owned = {}; save.eq = {};
+  for (const k of Object.keys(cats)) {
+    const own = Array.isArray(d.owned && d.owned[k]) ? d.owned[k].filter(id => typeof id === 'string' && Object.hasOwn(cats[k], id)) : [];
+    save.owned[k] = [...new Set([...DEF_OWNED[k], ...own])];
+    const e = d.eq && d.eq[k];
+    save.eq[k] = typeof e === 'string' && save.owned[k].includes(e) ? e : DEF_EQ[k];
+  }
+  const code = /^[a-z0-9]{6}$/, uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (code.test(d.refCode)) save.refCode = d.refCode;
+  if (uuid.test(d.refSecret)) save.refSecret = d.refSecret;
+  if (code.test(d.invitedBy)) save.invitedBy = d.invitedBy;
+  save.firstSeen = num(d.firstSeen, 1e15) || Date.now();
+  save.refCount = num(d.refCount, 1e6);
+  for (const k of ['reg', 'refDone', 'refChecked']) save[k] = d[k] === true;
+}
 const SAVE_KEY = 'skylance.save.v1';
 const DEF_OWNED = { mount: ['dragonfly'], trail: ['azure'], armor: ['silver'], weapon: ['darts'] }, DEF_EQ = { mount: 'dragonfly', trail: 'azure', armor: 'silver', weapon: 'darts' };
 const save = { gems: 0, best: 0, stars: {}, owned: { ...DEF_OWNED }, eq: { ...DEF_EQ }, up: {}, wlv: {}, hstars: {}, ch: {}, best2: {}, muted: false };
 try {
   const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-  if (d) { Object.assign(save, d); save.owned = { ...DEF_OWNED, ...d.owned }; save.eq = { ...DEF_EQ, ...d.eq }; save.up = { ...(d.up || {}) }; save.wlv = { ...(d.wlv || {}) }; save.hstars = { ...(d.hstars || {}) }; save.ch = { ...(d.ch || {}) }; save.best2 = { ...(d.best2 || {}) }; }
+  if (d && typeof d === 'object') loadSave(d);
   const old = +localStorage.getItem('skylance.best'); if (old > save.best) save.best = old;
 } catch (e) { }
 for (const k of ['mount', 'trail', 'armor', 'weapon']) if (!CATALOG[k][save.eq[k]]) save.eq[k] = DEF_EQ[k];
@@ -3300,7 +3328,7 @@ const storeLink = code => `${PLAY_URL}&referrer=${encodeURIComponent('utm_source
 let pendingChallenge = null;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.tm); toast.tm = setTimeout(() => t.hidden = true, 2600); }
 function parseChallenge(str) {
-  const m = /c-(\d+)-(\d+)-(\d+)-([a-z0-9]{4,12})/.exec(str || '');
+  const m = /c-(\d{1,2})-(\d{1,2})-(\d{1,9})-([a-z0-9]{6})(?![a-z0-9])/.exec(String(str || "").slice(0, 300));
   if (!m) return null;
   const r = +m[1] - 1, l = +m[2];
   if (r < 0 || r >= REALMS.length || l < 1 || l > 10) return null;
@@ -3349,22 +3377,22 @@ async function refSync() {
   try {
     if (!save.reg) {
       for (let i = 0; i < 3 && !save.reg; i++) {
-        const ok = await supa('register_player', { p_code: save.refCode, p_secret: save.refSecret });
+        let ok = await supa('register_player', { p_code: save.refCode, p_secret: save.refSecret });
         if (ok === null) return;
-        if (ok) { save.reg = true; persist(); }
+        if (ok === true) { save.reg = true; persist(); }
         else { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); persist(); }
       }
       if (!save.reg) return;
     }
     if (save.invitedBy && !save.refDone) {
-      const ok = await supa('claim_referral', { p_invitee: save.refCode, p_secret: save.refSecret, p_inviter: save.invitedBy });
+      const ok = true === await supa('claim_referral', { p_invitee: save.refCode, p_secret: save.refSecret, p_inviter: save.invitedBy });
       if (ok !== null) {
         save.refDone = true;
         if (ok) { save.gems += REF_GEMS_INVITEE; grantFounder(); toast(`Friend bonus: +${REF_GEMS_INVITEE} gems and the Founder trail!`); SFX.up(); refreshGems(); }
         persist();
       }
     }
-    const n = await supa('collect_referral_rewards', { p_code: save.refCode, p_secret: save.refSecret });
+    const n = Math.min(50, Math.floor(+(await supa('collect_referral_rewards', { p_code: save.refCode, p_secret: save.refSecret })) || 0));
     if (n > 0) {
       save.gems += REF_GEMS_INVITER * n; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
       toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(REF_GEMS_INVITER * n)} gems`); SFX.up(); buzz('medium');

@@ -5,3 +5,12 @@ android/.gradle/
 *.apk
 Skylance.apk
 tools/art/raw/
+
+# Signing keys and secrets: never commit
+*.jks
+*.keystore
+*.p12
+key.properties
+keystore.properties
+.env
+.env.*
