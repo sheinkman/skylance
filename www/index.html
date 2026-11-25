@@ -134,6 +134,10 @@
   .ar-img{height:64px;border-radius:10px;background-size:cover;background-position:center}
   .card.locked{opacity:.5}
   .card .best{font-size:11px;color:var(--gold);font-weight:700}
+  a.ui-btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;background:var(--glass);border:1px solid var(--edge);
+    color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:700;font-size:13px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  #toast[hidden]{display:none}
   .crit{font-size:12px;color:var(--muted);text-align:center;margin:0}
   @media (prefers-reduced-motion: reduce){.stars span.on{animation:none}}
   @media (max-height:420px){.logo{font-size:64px}.screen{gap:10px}.levels{width:min(470px,100%);gap:9px}.lvl{border-radius:14px;font-size:17px}.panel{padding:12px 20px;gap:7px}.stars{font-size:32px}.cards{max-height:58vh}}
@@ -188,6 +192,22 @@
   <div class="topbar"><button class="ui-btn small" id="b-arena-back">Back</button><h2>Arena</h2><span class="gems"><span class="gem"></span><span id="g-arena">0</span></span></div>
   <div class="cards arena-cards" id="arena-cards"></div>
 </section>
+
+<section id="s-challenge" class="screen dim" hidden>
+  <div class="panel">
+    <h2>Challenge!</h2>
+    <p class="tag" id="ch-text"></p>
+    <div class="row">
+      <button class="ui-btn primary" id="b-ch-play">Play the challenge</button>
+    </div>
+    <div class="row" id="ch-app-row">
+      <a class="ui-btn small" id="b-ch-store" href="#" target="_blank" rel="noopener">Get it on Google Play</a>
+      <a class="ui-btn small" id="b-ch-open" href="#">Open in the app</a>
+    </div>
+    <button class="ui-btn small" id="b-ch-menu">Main menu</button>
+  </div>
+</section>
+<div id="toast" hidden></div>
 
 <section id="s-result" class="screen dim" hidden>
   <div class="panel">
@@ -582,6 +602,7 @@ try {
   const old = +localStorage.getItem('skylance.best'); if (old > save.best) save.best = old;
 } catch (e) { }
 for (const k of ['mount', 'trail', 'armor', 'weapon']) if (!CATALOG[k][save.eq[k]]) save.eq[k] = DEF_EQ[k];
+if (!save.refCode) { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
 const UP = k => save.up[k] || 0;
 const pwDur = k => PW[k].dur * (1 + 0.15 * UP('power'));
@@ -1079,6 +1100,7 @@ function spawnPlayer() {
 }
 
 function startLevel(r, l, hard) {
+  if (!game.challenge || game.challenge.r !== r || game.challenge.l !== l) game.challenge = null;
   game.mode = 'campaign'; game.hard = !!hard;
   score = 0; lives = 3 + UP('lives') - (game.hard ? 1 : 0); nextLife = 20000;
   setupLevel(r, l);
@@ -3262,10 +3284,47 @@ function render() {
 // ====================================================================
 //  MENUS
 // ====================================================================
-const SCREENS = ['s-title', 's-map', 's-shop', 's-arena', 's-result', 's-pause'];
+const SCREENS = ['s-title', 's-map', 's-shop', 's-arena', 's-challenge', 's-result', 's-pause'];
 function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; syncTouchUI(); refreshGems(); }
 function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop', 'g-arena']) $(id).textContent = fmt(save.gems); }
 function toggleSound() { save.muted = !save.muted; persist(); $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On'); }
+// ---------- challenge links ----------
+const WEB_URL = 'https://claude.ai/artifact/AnRuoyur9MGeiSHP7RKicm';
+const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.skylance.game';
+const IS_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const challengeHash = (r, l, sc) => `c-${r + 1}-${l}-${Math.floor(sc)}-${save.refCode}`;
+const storeLink = code => `${PLAY_URL}&referrer=${encodeURIComponent('utm_source=challenge&ref=' + code)}`;
+let pendingChallenge = null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.tm); toast.tm = setTimeout(() => t.hidden = true, 2600); }
+function parseChallenge(str) {
+  const m = /c-(\d+)-(\d+)-(\d+)-([a-z0-9]{4,12})/.exec(str || '');
+  if (!m) return null;
+  const r = +m[1] - 1, l = +m[2];
+  if (r < 0 || r >= REALMS.length || l < 1 || l > 10) return null;
+  return { r, l, score: +m[3], code: m[4] };
+}
+async function shareChallenge(r, l, sc) {
+  const link = `${WEB_URL}#${challengeHash(r, l, sc)}`;
+  const text = `I scored ${fmt(sc)} on Skylance level ${r + 1}-${l}. Can you beat me?`;
+  try {
+    const Sh = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+    if (IS_APP && Sh) { await Sh.share({ title: 'Skylance challenge', text, url: link, dialogTitle: 'Challenge a friend' }); return; }
+    if (navigator.share) { await navigator.share({ title: 'Skylance challenge', text, url: link }); return; }
+  } catch (e) { if (e && (e.name === 'AbortError' || /cancel/i.test(e.message || ''))) return; }
+  try { await navigator.clipboard.writeText(`${text} ${link}`); toast('Challenge link copied. Paste it to a friend!'); }
+  catch (e) { toast(link); }
+}
+function openChallenge(ch) {
+  pendingChallenge = ch;
+  game.state = 'menu'; P = null; boss = null;
+  if (realm !== ch.r || layout !== ch.l) setRealm(ch.r, ch.l);
+  $('ch-text').textContent = `A friend scored ${fmt(ch.score)} on level ${ch.r + 1}-${ch.l} in ${REALMS[ch.r].name}. Can you beat it?`;
+  $('ch-app-row').hidden = IS_APP;
+  $('b-ch-store').href = storeLink(ch.code);
+  $('b-ch-open').href = `intent://challenge/${challengeHash(ch.r, ch.l, ch.score).replace(save.refCode, ch.code)}#Intent;scheme=skylance;package=com.skylance.game;S.browser_fallback_url=${encodeURIComponent(storeLink(ch.code))};end`;
+  show('s-challenge');
+}
+function checkChallengeLink(url) { const ch = parseChallenge(url); if (ch) openChallenge(ch); return !!ch; }
 function goTitle() {
   game.state = 'menu'; if (realm !== 0 || layout !== 1) setRealm(0);
   P = null; enemies = []; parts = []; texts = []; boss = null;
@@ -3444,6 +3503,17 @@ function finishLevel(win) {
   $('r-stats').innerHTML = `<dt>Score</dt><dd>${fmt(score)}</dd><dt>Time</dt><dd>${secs.toFixed(1)}s</dd><dt>Gems earned</dt><dd><span class="gem"></span> ${fmt(earned)}</dd>`;
   fillChallengeList($('r-ch'), win ? chDone : null);
   const list = [];
+  const ch = game.challenge;
+  if (ch && ch.r === r && ch.l === l) {
+    const beat = win && score > ch.score;
+    $('r-title').textContent = beat ? 'Challenge Won!' : 'Challenge Lost';
+    $('r-crit').textContent = beat ? `You beat ${fmt(ch.score)} by ${fmt(score - ch.score)} points!` : `Target was ${fmt(ch.score)}. ${win ? 'So close!' : 'Try again!'}`;
+    if (win) list.push(['Challenge back', 'primary', () => shareChallenge(r, l, score)]);
+    list.push(['Retry', '', () => startLevel(r, l, false)]);
+    list.push(['Menu', '', () => { game.challenge = null; goTitle(); }]);
+    resultButtons(list); show('s-result'); return;
+  }
+  if (win) list.push(['Challenge', '', () => shareChallenge(r, l, score)]);
   if (win && l < 10) list.push(['Next', 'primary', () => startLevel(r, l + 1, hard)]);
   else if (win && l === 10 && !hard && r + 1 < REALMS.length) list.push([REALMS[r + 1].name, 'primary', () => openMap(r + 1)]);
   list.push(['Retry', win ? '' : 'primary', () => startLevel(r, l, hard)]);
@@ -3506,6 +3576,8 @@ function finishEndless() {
 $('b-play').onclick = () => { let r = 0; for (let i = REALMS.length - 1; i >= 0; i--) if (realmUnlocked(i)) { r = i; break; } openMap(r); };
 $('b-endless').onclick = startEndless;
 $('b-arena').onclick = openArena;
+$('b-ch-play').onclick = () => { const ch = pendingChallenge; if (!ch) return; game.challenge = ch; startLevel(ch.r, ch.l, false); };
+$('b-ch-menu').onclick = () => { pendingChallenge = null; game.challenge = null; goTitle(); };
 $('b-arena-back').onclick = goTitle;
 $('b-shop').onclick = () => openShop();
 $('b-sound').onclick = toggleSound;
@@ -3534,9 +3606,16 @@ function loop(t) {
 setRealm(0);
 resize();
 goTitle();
+if (!checkChallengeLink(location.hash)) {
+  const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (AppP && AppP.getLaunchUrl) AppP.getLaunchUrl().then(r => r && r.url && checkChallengeLink(r.url)).catch(() => { });
+}
+addEventListener('hashchange', () => checkChallengeLink(location.hash));
+{ const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (AppP && AppP.addListener) AppP.addListener('appUrlOpen', e => { if (game.state !== 'play') checkChallengeLink(e.url); }); }
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>
