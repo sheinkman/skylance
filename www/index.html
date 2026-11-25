@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://znipfvuysadwnucczjtm.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://skylance-api.skylance.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#070a22">
@@ -3380,14 +3380,28 @@ function openChallenge(ch) {
   show('s-challenge');
 }
 // ---------- referrals (Supabase) ----------
-const SUPA_URL = 'https://znipfvuysadwnucczjtm.supabase.co', SUPA_KEY = 'sb_publishable_FgPeCWE27DDUt52Aeqj9Mg_LW8nlXZS';
-const REF_GEMS_INVITER = 200, REF_GEMS_INVITEE = 150;
-async function supa(fn, body) {
-  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
+// The game talks only to the Skylance backend. What happens behind it can change without an app update.
+const API_URL = 'https://skylance-api.skylance.workers.dev';
+// Settings the backend can change at any time (defaults used until it answers, and offline).
+const CFG = { videoGems: 40, videosPerDay: 5, inviterGems: 200, inviteeGems: 150 };
+const clampInt = (v, lo, hi, dflt) => Number.isFinite(+v) ? Math.max(lo, Math.min(hi, Math.floor(+v))) : dflt;
+async function apiCall(path, body, timeout = 8000) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), timeout);
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, { method: 'POST', signal: ctl.signal, headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    return r.ok ? await r.json() : null;
+    const r = await fetch(API_URL + path, body ? { method: 'POST', signal: ctl.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { signal: ctl.signal });
+    let data = null; try { data = await r.json(); } catch (e) { }
+    return { status: r.status, data: data && typeof data === 'object' ? data : null };
   } catch (e) { return null; } finally { clearTimeout(tm); }
+}
+async function api(path, body) { const r = await apiCall(path, body); return r && r.status === 200 ? r.data : null; }
+async function loadConfig() {
+  const c = await api('/v1/config');
+  if (!c) return;
+  CFG.videoGems = clampInt(c.videoGems, 1, 500, CFG.videoGems);
+  CFG.videosPerDay = clampInt(c.videosPerDay, 0, 20, CFG.videosPerDay);
+  CFG.inviterGems = clampInt(c.inviterGems, 0, 2000, CFG.inviterGems);
+  CFG.inviteeGems = clampInt(c.inviteeGems, 0, 2000, CFG.inviteeGems);
+  if (!$('s-shop').hidden && shopTab === 'gems') openShop();
 }
 const newPlayer = () => Date.now() - save.firstSeen < 20 * 3600e3;
 function noteInviter(code) {
@@ -3401,25 +3415,27 @@ async function refSyncRun() {
   try {
     if (!save.reg) {
       for (let i = 0; i < 3 && !save.reg; i++) {
-        let ok = await supa('register_player', { p_code: save.refCode, p_secret: save.refSecret });
-        if (ok === null) return;
-        if (ok === true) { save.reg = true; persist(); }
+        const r = await api('/v1/register', { code: save.refCode, secret: save.refSecret });
+        if (!r) return;
+        if (r.ok === true) { save.reg = true; persist(); }
         else { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); persist(); }
       }
       if (!save.reg) return;
     }
     if (save.invitedBy && !save.refDone) {
-      const ok = true === await supa('claim_referral', { p_invitee: save.refCode, p_secret: save.refSecret, p_inviter: save.invitedBy });
-      if (ok !== null) {
+      const r = await api('/v1/invite/claim', { code: save.refCode, secret: save.refSecret, inviter: save.invitedBy });
+      if (r) {
         save.refDone = true;
-        if (ok) { save.gems += REF_GEMS_INVITEE; grantFounder(); toast(`Friend bonus: +${REF_GEMS_INVITEE} gems and the Founder trail!`); SFX.up(); refreshGems(); }
+        if (r.ok === true) { const g = clampInt(r.gems, 0, 2000, 0); save.gems += g; grantFounder(); toast(`Friend bonus: +${fmt(g)} gems and the Founder trail!`); SFX.up(); refreshGems(); }
         persist();
       }
     }
-    const n = Math.min(50, Math.floor(+(await supa('collect_referral_rewards', { p_code: save.refCode, p_secret: save.refSecret })) || 0));
+    const c = await api('/v1/invite/collect', { code: save.refCode, secret: save.refSecret });
+    const n = c ? clampInt(c.count, 0, 50, 0) : 0;
     if (n > 0) {
-      save.gems += REF_GEMS_INVITER * n; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
-      toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(REF_GEMS_INVITER * n)} gems`); SFX.up(); buzz('medium');
+      const g = clampInt(c.gems, 0, 100000, 0);
+      save.gems += g; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
+      toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(g)} gems`); SFX.up(); buzz('medium');
     }
   } catch (e) { }
   }
@@ -3450,7 +3466,6 @@ async function shareInvite() {
 // Google's public TEST ids. Replace AD_REWARD_ID with your own rewarded ad unit and set AD_TEST = false before release.
 const AD_TEST = true, AD_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
 const PRIVACY_URL = 'https://claude.ai/artifact/QBBvPTK3PFijCaoPGZkYQ4';
-const VIDEO_GEMS = 40, VIDEOS_PER_DAY = 5;
 const PACKS = [
   { id: 'gems_300', gems: 300, name: 'Pouch of Gems', n: 3 },
   { id: 'gems_1000', gems: 1000, name: 'Satchel of Gems', n: 6, tag: '+11% bonus' },
@@ -3460,7 +3475,7 @@ const PACKS = [
 const plug = n => window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[n];
 const MON = { adsInit: false, adReady: false, adLoading: false, adShowing: false, prices: {}, billing: false, busy: false };
 const today = () => new Date().toISOString().slice(0, 10);
-const videosLeft = () => VIDEOS_PER_DAY - (save.vids && save.vids.day === today() ? save.vids.n : 0);
+const videosLeft = () => CFG.videosPerDay - (save.vids && save.vids.day === today() ? save.vids.n : 0);
 
 // Neutral age question (Google Play Families policy). Only the age group is kept, never the birth year.
 function needAgeCheck() { return IS_APP && !save.ageGroup; }
@@ -3510,8 +3525,8 @@ async function watchVideo() {
     const r = await A.showRewardVideoAd();
     if (r) {
       if (!save.vids || save.vids.day !== today()) save.vids = { day: today(), n: 0 };
-      save.vids.n++; save.gems += VIDEO_GEMS; persist(); refreshGems();
-      SFX.up(); buzz('medium'); toast(`+${VIDEO_GEMS} gems. Thanks for watching!`);
+      save.vids.n++; save.gems += CFG.videoGems; persist(); refreshGems();
+      SFX.up(); buzz('medium'); toast(`+${CFG.videoGems} gems. Thanks for watching!`);
     }
   } catch (e) { toast('The video could not play. Try again in a minute.'); }
   MON.adShowing = false; openShop(); adLoad();
@@ -3525,7 +3540,7 @@ async function verifyPurchase(p) {
   let res = null;
   try {
     const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 15000);
-    const r = await fetch(`${SUPA_URL}/functions/v1/verify-purchase`, { method: 'POST', signal: ctl.signal, headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ code: save.refCode, secret: save.refSecret, product, token: p.token }) });
+    const r = await fetch(`${API_URL}/v1/purchase/verify`, { method: 'POST', signal: ctl.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: save.refCode, secret: save.refSecret, product, token: p.token }) });
     clearTimeout(tm); res = await r.json();
   } catch (e) { toast('Could not reach the server. Your purchase is safe and will finish next time.'); return; }
   if (res && res.ok === true) {
@@ -3605,7 +3620,7 @@ function renderGems(box) {
     card.appendChild(btn); box.appendChild(card);
   };
   const left = videosLeft();
-  mkCard(previewVideo(), 'Free gems', fmt(VIDEO_GEMS), left > 0 ? `Watch a short video. ${left} left today.` : 'Come back tomorrow for more.',
+  mkCard(previewVideo(), 'Free gems', fmt(CFG.videoGems), left > 0 ? `Watch a short video. ${left} left today.` : 'Come back tomorrow for more.',
     left <= 0 ? 'Done for today' : MON.adReady ? 'Watch video' : 'Loading video…', 'primary', watchVideo, left <= 0 || !MON.adReady || MON.adShowing);
   for (const k of PACKS) {
     const price = MON.prices[k.id];
@@ -3906,6 +3921,7 @@ if (!checkChallengeLink(location.hash)) {
 }
 addEventListener('hashchange', () => checkChallengeLink(location.hash));
 $('b-invite').onclick = () => { SFX.power(); shareInvite(); };
+loadConfig();
 checkInstallReferrer().finally(refSync);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refSync(); });
 { const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;

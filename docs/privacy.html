@@ -83,7 +83,7 @@ td:first-child{font-weight:700}
 <p>Skylance is made for everyone, including children. On first launch the app asks for a year of birth and keeps only the age group. For children under 13, the app shows only child-directed, non-personalised ads and collects nothing beyond the table above. We do not knowingly collect personal information from children. A parent who believes their child's data should be removed can contact us as described below.</p>
 
 <h2>Sharing</h2>
-<p>We do not sell data. Data is shared only with the services that run the game: Supabase (our database host, servers in Frankfurt, Germany), Google Play (installs, purchases and invite codes) and Google AdMob (ads, as described above).</p>
+<p>We do not sell data. Data is shared only with the services that run the game: Cloudflare (runs our backend, which receives the game's requests; it uses your network address only to make the one-way hash described above and does not store it), Supabase (our database host, servers in Frankfurt, Germany), Google Play (installs, purchases and invite codes) and Google AdMob (ads, as described above).</p>
 
 <h2>Your choices and deleting data</h2>
 <ul>
@@ -95,7 +95,7 @@ td:first-child{font-weight:700}
 <div class="note"><b>Contact.</b> Use the developer email address shown on the Skylance page in the Google Play Store.</div>
 
 <h2>Security</h2>
-<p>Connections use HTTPS. Our database tables cannot be read by the public, and only three narrow functions can be called by the app, each checking the player's secret. Network addresses are stored only as one-way hashes and deleted after 2 days.</p>
+<p>Connections use HTTPS. The app talks only to our backend, never to the database directly. The database accepts requests only from the backend, and its tables cannot be read by the public. Network addresses are stored only as one-way hashes and deleted after 2 days.</p>
 
 <h2>Changes</h2>
 <p>If this policy changes, the new version is posted here with a new effective date. Significant changes are also announced in the app.</p>

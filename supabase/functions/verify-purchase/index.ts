@@ -2,6 +2,7 @@
 // Flow: game sends {code, secret, product, token} -> this function asks Google whether the purchase is real
 // -> records the token once in the purchases table -> replies with the gems to add. The game then consumes the purchase.
 // Needs the secret GOOGLE_PLAY_SERVICE_ACCOUNT (the JSON key of a service account linked in Play Console).
+// Only the Skylance backend may call it: it sends its key in x-backend-key, which the database checks.
 
 const PACKAGE = "com.skylance.game";
 const PACKS: Record<string, number> = { gems_300: 300, gems_1000: 1000, gems_2200: 2200, gems_5000: 5000 };
@@ -59,6 +60,10 @@ async function rest(path: string, init: RequestInit = {}) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return reply(405, { ok: false, error: "method" });
+
+  const backendKey = req.headers.get("x-backend-key") ?? "";
+  const kr = backendKey ? await rest("rpc/api_ping", { method: "POST", body: JSON.stringify({ p_key: backendKey }) }) : null;
+  if (!kr || !kr.ok || (await kr.json()) !== true) return reply(403, { ok: false, error: "backend_only" });
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply(400, { ok: false, error: "bad_json" }); }

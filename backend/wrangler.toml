@@ -1,0 +1,19 @@
+# Cloudflare Worker settings for the Skylance backend.
+# Deploy with:  npx wrangler deploy        (from this folder, logged in to the Cloudflare account)
+# The secret BACKEND_KEY is already stored in Cloudflare; a deploy keeps it.
+# To replace it:  npx wrangler secret put BACKEND_KEY   (and store its SHA-256 in private.settings in the database)
+name = "skylance-api"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+SUPABASE_URL = "https://znipfvuysadwnucczjtm.supabase.co"
+SUPABASE_ANON = "sb_publishable_FgPeCWE27DDUt52Aeqj9Mg_LW8nlXZS"
+
+[triggers]
+# Keeps the free Supabase project awake: one tiny database call every 2 days.
+crons = ["23 5 */2 * *"]
+
+[observability]
+enabled = true

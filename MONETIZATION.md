@@ -9,10 +9,10 @@ Do the steps in order. Steps 1–5 are needed before anything can be sold.
 | Piece | What it does |
 |---|---|
 | Age question | Shown once, on first launch. Keeps only the age group (under 13, 13–15, 16+), never the birth year. |
-| Free gems video | Hangar, Gems tab: +40 gems per video, up to 5 a day. Ads appear nowhere else. |
+| Free gems video | Hangar, Gems tab: +40 gems per video, up to 5 a day (both set by the backend, see below). Ads appear nowhere else. |
 | Ads for under 13 | Child-directed, rated G, never personalised (Google Play Families policy). No consent pop-up. |
 | Ads for 13+ | Google's consent pop-up in Europe, then normal AdMob rewarded ads, rated PG at most. |
-| Gem packs | Google Play Billing. Each purchase is sent to the `verify-purchase` server function, which asks Google whether it is real, records it once, and only then are gems added. Purchases interrupted by a crash or a slow payment finish on the next launch. |
+| Gem packs | Google Play Billing. Each purchase goes through the Skylance backend to the `verify-purchase` server function, which asks Google whether it is real, records it once, and only then are gems added. Purchases interrupted by a crash or a slow payment finish on the next launch. |
 
 Gem packs (the product IDs must match exactly):
 
@@ -22,6 +22,8 @@ Gem packs (the product IDs must match exactly):
 | `gems_1000` | 1,000 | $2.99 |
 | `gems_2200` | 2,200 | $5.99 |
 | `gems_5000` | 5,000 | $11.99 |
+
+The video reward, the daily video limit and the invite rewards come from the backend (`CONFIG` in `backend/worker.js`), so they can be changed without an app update.
 
 The prices shown in the game come from Google Play, in each player's own currency. You set them in Play Console and can change them any time without a new app version. To change gem amounts, update both `PACKS` in `www/index.html` and `PACKS` in `supabase/functions/verify-purchase/index.ts`.
 

@@ -117,3 +117,86 @@ revoke all on function public._caller_hash(), public._rate_ok(text, int, interva
   public.register_player(text, uuid), public.claim_referral(text, uuid, text), public.collect_referral_rewards(text, uuid) from anon, authenticated, public;
 grant execute on function public.register_player(text, uuid), public.claim_referral(text, uuid, text), public.collect_referral_rewards(text, uuid) to anon, authenticated;
 grant execute on function public.record_purchase(text, text, uuid, text, int, text, boolean) to service_role;
+
+-- =====================================================================
+-- Backend-only access (added when the Cloudflare Worker backend went live).
+-- The game no longer calls the database. Only the backend may, proving itself with a secret key whose
+-- SHA-256 hash is stored in private.settings. The functions above stay for reference but are not callable
+-- by anon/authenticated any more.
+-- =====================================================================
+create schema if not exists private;
+revoke all on schema private from anon, authenticated, public;
+create table if not exists private.settings (key text primary key, value text not null);
+-- insert into private.settings values ('backend_key_sha256', '<sha256 hex of the backend key>');
+
+create or replace function private.key_ok(p_key text) returns boolean language sql stable security definer set search_path to '' as $$
+  select exists (select 1 from private.settings where key = 'backend_key_sha256'
+                 and value = encode(sha256(convert_to(coalesce(p_key, ''), 'UTF8')), 'hex'));
+$$;
+
+create or replace function private.rate_ok(p_kind text, p_limit int, p_window interval, p_who text) returns boolean
+language plpgsql volatile security definer set search_path to '' as $$
+declare n int;
+begin
+  if random() < 0.02 then delete from public.rate_log where created_at < now() - interval '2 days'; end if;
+  if p_who is null or p_who !~ '^[0-9a-f]{64}$' then return true; end if;
+  select count(*) into n from public.rate_log where kind = p_kind and who = p_who and created_at > now() - p_window;
+  if n >= p_limit then return false; end if;
+  insert into public.rate_log(kind, who) values (p_kind, p_who);
+  return true;
+end $$;
+
+create or replace function public.api_register(p_key text, p_who text, p_code text, p_secret uuid) returns boolean
+language plpgsql security definer set search_path to '' as $$
+declare existing uuid;
+begin
+  if not private.key_ok(p_key) then return null; end if;
+  if p_code is null or p_code !~ '^[a-z0-9]{6}$' or p_secret is null then return false; end if;
+  select secret into existing from public.players where code = p_code;
+  if existing is null then
+    if not private.rate_ok('register', 30, interval '1 hour', p_who) then return false; end if;
+    if (select count(*) from public.players where created_at > now() - interval '10 minutes') >= 3000 then return false; end if;
+    insert into public.players(code, secret) values (p_code, p_secret) on conflict (code) do nothing;
+    select secret into existing from public.players where code = p_code;
+  end if;
+  return existing = p_secret;
+end $$;
+
+create or replace function public.api_claim(p_key text, p_who text, p_invitee text, p_secret uuid, p_inviter text) returns boolean
+language plpgsql security definer set search_path to '' as $$
+declare today_count int;
+begin
+  if not private.key_ok(p_key) then return null; end if;
+  if p_inviter is null or p_invitee is null or p_inviter = p_invitee or p_inviter !~ '^[a-z0-9]{6}$' then return false; end if;
+  if not exists (select 1 from public.players where code = p_invitee and secret = p_secret and created_at > now() - interval '1 day') then return false; end if;
+  if not exists (select 1 from public.players where code = p_inviter) then return false; end if;
+  if exists (select 1 from public.referrals where invitee = p_invitee) then return false; end if;
+  if not private.rate_ok('claim', 5, interval '1 day', p_who) then return false; end if;
+  select count(*) into today_count from public.referrals where inviter = p_inviter and created_at > now() - interval '1 day';
+  if today_count >= 10 then return false; end if;
+  insert into public.referrals(inviter, invitee) values (p_inviter, p_invitee) on conflict (invitee) do nothing;
+  return found;
+end $$;
+
+create or replace function public.api_collect(p_key text, p_code text, p_secret uuid) returns integer
+language plpgsql security definer set search_path to '' as $$
+declare n int;
+begin
+  if not private.key_ok(p_key) then return null; end if;
+  if not exists (select 1 from public.players where code = p_code and secret = p_secret) then return 0; end if;
+  with c as (update public.referrals set claimed = true where inviter = p_code and not claimed returning 1)
+  select count(*) into n from c;
+  return n;
+end $$;
+
+create or replace function public.api_ping(p_key text) returns boolean language sql stable security definer set search_path to '' as $$
+  select private.key_ok(p_key);
+$$;
+
+revoke all on function private.key_ok(text), private.rate_ok(text, int, interval, text) from anon, authenticated, public;
+revoke execute on function public.register_player(text, uuid), public.claim_referral(text, uuid, text),
+  public.collect_referral_rewards(text, uuid), public._caller_hash(), public._rate_ok(text, int, interval) from anon, authenticated, public;
+revoke all on function public.api_register(text, text, text, uuid), public.api_claim(text, text, text, uuid, text),
+  public.api_collect(text, text, uuid), public.api_ping(text) from public;
+grant execute on function public.api_register(text, text, text, uuid), public.api_claim(text, text, text, uuid, text),
+  public.api_collect(text, text, uuid), public.api_ping(text) to anon, authenticated;
