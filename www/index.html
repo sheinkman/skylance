@@ -156,7 +156,7 @@
 </div>
 
 <section id="s-title" class="screen">
-  <div class="topbar"><button class="ui-btn small" id="b-sound">Sound: On</button><span class="gems"><span class="gem"></span><span id="g-title">0</span></span></div>
+  <div class="topbar"><button class="ui-btn small" id="b-sound">Sound: On</button><button class="ui-btn small primary" id="b-invite">Invite friends: +200 gems</button><span class="gems"><span class="gem"></span><span id="g-title">0</span></span></div>
   <h1 class="logo"><span id="logo-text">SKYLANCE</span><img id="logo-img" src="assets/logo.png" alt="SKYLANCE" hidden onload="this.hidden=false;document.getElementById('logo-text').hidden=true"></h1>
   <p class="tag">Ride the skies. Strike from above. Claim every realm.</p>
   <div class="row">
@@ -328,6 +328,7 @@ const TRAILS = {
   ember: { name: 'Ember', price: 100, desc: 'Drifting cinders that rise.', c: () => `hsl(${18 + Math.random() * 28},100%,60%)`, up: true },
   rainbow: { name: 'Prism', price: 200, desc: 'Every color, one after another.', c: () => `hsl(${(frame * 5) % 360},100%,70%)` },
   lightning: { name: 'Storm', price: 250, desc: 'Crackling white-violet sparks.', c: () => Math.random() < 0.5 ? '#f2ecff' : '#b49cff', jitter: true },
+  founder: { name: 'Founder', price: 0, invite: true, desc: 'Gold and teal sparks. Only for friends who invite or join.', c: () => Math.random() < 0.5 ? '#ffd76a' : '#5ff2d6' },
 };
 const ARMORS = {
   silver: { name: 'Silver Knight', price: 0, desc: 'Polished plate and azure cape.', pal: { armor1: '#ffffff', armor2: '#9fb3c8', cape1: '#3d7bff', cape2: '#1b2f8a', plume: '#ffcf3d', tip: '#8ff3ff' } },
@@ -602,6 +603,8 @@ try {
   const old = +localStorage.getItem('skylance.best'); if (old > save.best) save.best = old;
 } catch (e) { }
 for (const k of ['mount', 'trail', 'armor', 'weapon']) if (!CATALOG[k][save.eq[k]]) save.eq[k] = DEF_EQ[k];
+if (!save.firstSeen) save.firstSeen = Date.now();
+if (!save.refSecret) save.refSecret = (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16)));
 if (!save.refCode) { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); }
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } }
 const UP = k => save.up[k] || 0;
@@ -3316,6 +3319,7 @@ async function shareChallenge(r, l, sc) {
 }
 function openChallenge(ch) {
   pendingChallenge = ch;
+  noteInviter(ch.code);
   game.state = 'menu'; P = null; boss = null;
   if (realm !== ch.r || layout !== ch.l) setRealm(ch.r, ch.l);
   $('ch-text').textContent = `A friend scored ${fmt(ch.score)} on level ${ch.r + 1}-${ch.l} in ${REALMS[ch.r].name}. Can you beat it?`;
@@ -3323,6 +3327,71 @@ function openChallenge(ch) {
   $('b-ch-store').href = storeLink(ch.code);
   $('b-ch-open').href = `intent://challenge/${challengeHash(ch.r, ch.l, ch.score).replace(save.refCode, ch.code)}#Intent;scheme=skylance;package=com.skylance.game;S.browser_fallback_url=${encodeURIComponent(storeLink(ch.code))};end`;
   show('s-challenge');
+}
+// ---------- referrals (Supabase) ----------
+const SUPA_URL = 'https://znipfvuysadwnucczjtm.supabase.co', SUPA_KEY = 'sb_publishable_FgPeCWE27DDUt52Aeqj9Mg_LW8nlXZS';
+const REF_GEMS_INVITER = 200, REF_GEMS_INVITEE = 150;
+async function supa(fn, body) {
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/${fn}`, { method: 'POST', signal: ctl.signal, headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; } finally { clearTimeout(tm); }
+}
+const newPlayer = () => Date.now() - save.firstSeen < 20 * 3600e3;
+function noteInviter(code) {
+  if (code && /^[a-z0-9]{6}$/.test(code) && code !== save.refCode && !save.invitedBy && !save.refDone && newPlayer()) { save.invitedBy = code; persist(); refSync(); }
+}
+function grantFounder() { if (!save.owned.trail.includes('founder')) save.owned.trail.push('founder'); }
+let refBusy = false;
+async function refSync() {
+  if (refBusy) return; refBusy = true;
+  try {
+    if (!save.reg) {
+      for (let i = 0; i < 3 && !save.reg; i++) {
+        const ok = await supa('register_player', { p_code: save.refCode, p_secret: save.refSecret });
+        if (ok === null) return;
+        if (ok) { save.reg = true; persist(); }
+        else { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; save.refCode = Array.from({ length: 6 }, () => A[Math.floor(Math.random() * A.length)]).join(''); persist(); }
+      }
+      if (!save.reg) return;
+    }
+    if (save.invitedBy && !save.refDone) {
+      const ok = await supa('claim_referral', { p_invitee: save.refCode, p_secret: save.refSecret, p_inviter: save.invitedBy });
+      if (ok !== null) {
+        save.refDone = true;
+        if (ok) { save.gems += REF_GEMS_INVITEE; grantFounder(); toast(`Friend bonus: +${REF_GEMS_INVITEE} gems and the Founder trail!`); SFX.up(); refreshGems(); }
+        persist();
+      }
+    }
+    const n = await supa('collect_referral_rewards', { p_code: save.refCode, p_secret: save.refSecret });
+    if (n > 0) {
+      save.gems += REF_GEMS_INVITER * n; save.refCount = (save.refCount || 0) + n; grantFounder(); persist(); refreshGems();
+      toast(`${n === 1 ? 'A friend' : n + ' friends'} joined with your link! +${fmt(REF_GEMS_INVITER * n)} gems`); SFX.up(); buzz('medium');
+    }
+  } finally { refBusy = false; }
+}
+async function checkInstallReferrer() {
+  if (!IS_APP || save.refChecked) return;
+  const IR = window.Capacitor.Plugins && window.Capacitor.Plugins.InstallReferrer;
+  if (!IR) return;
+  try {
+    const r = await IR.get();
+    save.refChecked = true; persist();
+    const m = /(?:^|[&?])ref=([a-z0-9]{6})/.exec(decodeURIComponent((r && r.referrer) || ''));
+    if (m) noteInviter(m[1]);
+  } catch (e) { }
+}
+async function shareInvite() {
+  const text = `Join me in Skylance, a flying joust game! We both get bonus gems and an exclusive trail:`;
+  const link = storeLink(save.refCode);
+  try {
+    const Sh = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+    if (IS_APP && Sh) { await Sh.share({ title: 'Play Skylance with me', text, url: link, dialogTitle: 'Invite friends' }); return; }
+    if (navigator.share) { await navigator.share({ title: 'Play Skylance with me', text, url: link }); return; }
+  } catch (e) { if (e && (e.name === 'AbortError' || /cancel/i.test(e.message || ''))) return; }
+  try { await navigator.clipboard.writeText(`${text} ${link}`); toast('Invite link copied. Send it to a friend!'); }
+  catch (e) { toast(link); }
 }
 function checkChallengeLink(url) { const ch = parseChallenge(url); if (ch) openChallenge(ch); return !!ch; }
 function goTitle() {
@@ -3412,6 +3481,7 @@ function openShop(tab) {
     const btn = document.createElement('button'); btn.className = 'ui-btn' + (!owned && save.gems >= it.price ? ' primary' : '');
     if (eq) { btn.textContent = 'Equipped'; btn.disabled = true; }
     else if (owned) { btn.textContent = 'Equip'; btn.onclick = () => { save.eq[shopTab] = id; persist(); SFX.power(); openShop(); }; }
+    else if (it.invite) { btn.textContent = 'Invite a friend'; btn.className = 'ui-btn primary'; btn.onclick = () => shareInvite(); }
     else {
       btn.innerHTML = `<span class="gem"></span> ${fmt(it.price)}`;
       if (save.gems < it.price) { btn.disabled = true; btn.title = `Need ${fmt(it.price - save.gems)} more gems`; }
@@ -3611,11 +3681,14 @@ if (!checkChallengeLink(location.hash)) {
   if (AppP && AppP.getLaunchUrl) AppP.getLaunchUrl().then(r => r && r.url && checkChallengeLink(r.url)).catch(() => { });
 }
 addEventListener('hashchange', () => checkChallengeLink(location.hash));
+$('b-invite').onclick = () => { SFX.power(); shareInvite(); };
+checkInstallReferrer().finally(refSync);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refSync(); });
 { const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (AppP && AppP.addListener) AppP.addListener('appUrlOpen', e => { if (game.state !== 'play') checkChallengeLink(e.url); }); }
 requestAnimationFrame(loop);
 window.__sky = { get game() { return game; }, get P() { return P; }, get enemies() { return enemies; }, get boss() { return boss; }, get score() { return score; },
-  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
+  get pickups() { return pickups; }, get stals() { return stals; }, get bolts() { return bolts; }, get twisters() { return twisters; }, get pshots() { return pshots; }, fireWeapon: () => fireWeapon(), get plats() { return PLATS; }, get layout() { return layout; }, parseChallenge, shareChallenge, refSync, shareInvite, noteInviter, challengeHash, get pendingChallenge() { return pendingChallenge; }, startRush, startGauntlet, openArena, get run() { return run; }, challengesFor, get mapHard() { return mapHard; }, get gas() { return gas; }, get drips() { return drips; }, get meteors() { return meteors; }, get wisps() { return wisps; }, addWalkers, layoutFor, genLayout, save, startLevel, startEndless, spawnPickup, openShop, openMap, input };
 </script>
 </body>
 </html>
