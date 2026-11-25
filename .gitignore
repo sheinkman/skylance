@@ -14,3 +14,5 @@ key.properties
 keystore.properties
 .env
 .env.*
+
+tools/qa/out/
