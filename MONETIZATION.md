@@ -44,7 +44,7 @@ In Play Console go to **Settings → Payments profile** and create a merchant ac
 
 ## 4. App content (Play Console → Policy → App content)
 
-- **Privacy policy:** https://claude.ai/artifact/QBBvPTK3PFijCaoPGZkYQ4. First open it, choose **Share** and set it to anyone with the link, so Google can read it. The policy tells people to contact you through the developer email on your Play listing, so set that email.
+- **Privacy policy:** https://play.skylance.workers.dev/privacy (public; republished with `python3 tools/web/deploy.py`). The policy tells people to contact you through the developer email on your Play listing, so set that email.
 - **Target audience:** select the age groups including under 13, plus 13–15, 16–17 and 18+. This puts the app in the **Families** program. Answer that the app has an age screen (it does: the birth-year question).
 - **Ads:** Yes, the app contains ads.
 - **Content rating:** fill in the questionnaire honestly (fantasy combat with insects, no blood, in-app purchases, no chat). Expect an Everyone or Everyone 10+ type rating.

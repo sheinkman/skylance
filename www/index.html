@@ -3455,7 +3455,7 @@ function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; syncTouchUI
 function refreshGems() { for (const id of ['g-title', 'g-map', 'g-shop', 'g-arena', 'g-account']) $(id).textContent = fmt(save.gems); }
 function toggleSound() { save.muted = !save.muted; persist(); $('b-sound').textContent = 'Sound: ' + (save.muted ? 'Off' : 'On'); }
 // ---------- challenge links ----------
-const WEB_URL = 'https://claude.ai/artifact/AnRuoyur9MGeiSHP7RKicm';
+const WEB_URL = 'https://play.skylance.workers.dev/';
 const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.skylance.game';
 const IS_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const challengeHash = (r, l, sc) => `c-${r + 1}-${l}-${Math.floor(sc)}-${save.refCode}`;
@@ -3723,7 +3723,7 @@ async function shareInvite() {
 // ---------- monetization: age check, rewarded videos, gem packs ----------
 // Google's public TEST ids. Replace AD_REWARD_ID with your own rewarded ad unit and set AD_TEST = false before release.
 const AD_TEST = true, AD_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
-const PRIVACY_URL = 'https://claude.ai/artifact/QBBvPTK3PFijCaoPGZkYQ4';
+const PRIVACY_URL = 'https://play.skylance.workers.dev/privacy';
 const PACKS = [
   { id: 'gems_300', gems: 300, name: 'Pouch of Gems', n: 3 },
   { id: 'gems_1000', gems: 1000, name: 'Satchel of Gems', n: 6, tag: '+11% bonus' },

@@ -41,6 +41,11 @@ Game  ->  Skylance backend (Cloudflare Worker, skylance-api.skylance.workers.dev
 - `purchases` records each Google Play purchase token once. The `verify-purchase` edge function accepts calls only from the backend (it checks the backend key with the database). `record_purchase` can be called only by that function (service role), which first confirms the purchase with the Google Play Developer API. The Google service-account key lives only in Supabase's secret store.
 - The game contains no keys at all. The backend key, the Supabase service-role key, the database password and the Cloudflare API token must never appear in this repository or the app.
 
+## Web version
+
+- Served by the `play` Cloudflare Worker from Workers KV (`tools/web/deploy.py`): read-only, GET/HEAD only, file names restricted to a safe pattern (no `..`), `nosniff`, `no-referrer` and `SAMEORIGIN` framing headers.
+- The web version never talks to the account backend except to read game settings; it keeps progress in the browser only.
+
 ## Rules to keep
 
 1. Never put a secret key in `www/index.html` or the Android project. Anything shipped in the app can be read by anyone.

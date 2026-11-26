@@ -44,6 +44,12 @@ docs/privacy.html     Privacy policy page
 
 There is no bundler or build step for the game itself. Open `www/index.html` in a browser to play.
 
+## Play in a web browser
+
+The web version is at **https://play.skylance.workers.dev** (keyboard on a computer, touch buttons on a phone or tablet).
+It saves progress in the browser and has no gem shop, videos or cloud save; those are in the Android app.
+After changing `www/`, publish it with `python3 tools/web/deploy.py`.
+
 ## Backend
 
 The app talks only to `https://skylance-api.skylance.workers.dev` (a Cloudflare Worker in `backend/`), which talks to the Supabase database. To change game settings such as the video reward, edit `CONFIG` in `backend/worker.js` and deploy with `npx wrangler deploy` from the `backend` folder. Players get the new values on their next launch, with no app update.
