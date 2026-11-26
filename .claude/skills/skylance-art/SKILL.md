@@ -85,5 +85,5 @@ as noise and look at the pictures yourself before reacting to it.
 
 ## 5. Ship
 
-Rebuild the APK (`npx cap sync android`, then `./gradlew assembleDebug` in `android/`), republish the web version with
-the changed `assets/*` files, commit (`tools/art/assets.json`, `www/assets/*`, `www/index.html`) and push.
+Rebuild the APK (`npx cap sync android`, then `./gradlew assembleDebug` in `android/`), publish the web version for
+testers with `python3 tools/web/deploy.py` (https://play.skylance.workers.dev), commit (`tools/art/assets.json`, `www/assets/*`, `www/index.html`) and push.
